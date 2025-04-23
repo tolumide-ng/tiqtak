@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use crate::direction::Dir;
+use crate::direction::Player;
 
 pub(crate) struct BitBoard(u64);
 
@@ -67,10 +67,10 @@ impl BitBoard {
         moves
     }
 
-    pub(crate) fn moves(&self, direction: Dir) -> Vec<(u8, u8)> {
+    pub(crate) fn moves(&self, direction: Player) -> Vec<(u8, u8)> {
         let (mut left, mut right) = match direction {
-            Dir::Top => (self.top_left(), self.top_right()),
-            Dir::Bottom => (self.bottom_left(), self.bottom_right()),
+            Player::South => (self.top_left(), self.top_right()),
+            Player::North => (self.bottom_left(), self.bottom_right()),
         };
 
         left.reserve(right.len());
@@ -90,5 +90,11 @@ impl Deref for BitBoard {
 impl DerefMut for BitBoard {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+impl From<u64> for BitBoard {
+    fn from(value: u64) -> Self {
+        Self(value)
     }
 }
