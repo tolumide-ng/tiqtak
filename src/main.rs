@@ -1,6 +1,6 @@
 pub(crate) mod bitboard;
 pub(crate) mod board;
-pub(crate) mod direction;
+pub(crate) mod utils;
 
 fn main() {
     println!("Hello, world!");

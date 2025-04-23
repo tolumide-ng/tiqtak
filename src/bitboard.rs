@@ -1,8 +1,9 @@
-use std::ops::{Deref, DerefMut};
+use crate::utils::Player;
 
-use crate::direction::Player;
-
-pub(crate) struct BitBoard(u64);
+pub(crate) struct BitBoard {
+    pub(super) current: u64,
+    pub(super) other: u64,
+}
 
 impl BitBoard {
     const LEFT: u64 = 0x101010101010101;
@@ -18,47 +19,49 @@ impl BitBoard {
     /// exclude the pieces already on column A (left column)
     /// exclude the pieces already on row 8 (top row)
     /// pieces that are safe to move top-left
-    fn top_left(&self) -> Vec<(u8, u8)> {
-        let src = ((!BitBoard::LEFT) & self.0) & ((!BitBoard::TOP) & self.0);
+    fn top_left(&self) -> Vec<(u8, u8, bool)> {
+        let src = ((!BitBoard::LEFT) & self.current) & ((!BitBoard::TOP) & self.current);
         let dst = src << Self::TOP_LEFT_MV;
 
-        return Self::get_moves(src, dst);
+        return self.get_moves(src, dst);
     }
 
     /// exclude the pieces already on column H (right column)
     /// exclude the pieces already on row 8 (top row)
-    fn top_right(&self) -> Vec<(u8, u8)> {
-        let src = ((!BitBoard::RIGHT) & self.0) & ((!BitBoard::TOP) & self.0);
+    fn top_right(&self) -> Vec<(u8, u8, bool)> {
+        let src = ((!BitBoard::RIGHT) & self.current) & ((!BitBoard::TOP) & self.current);
         let dst = src << Self::TOP_RIGHT_MV;
 
-        return Self::get_moves(src, dst);
+        return self.get_moves(src, dst);
     }
 
     /// exclude the pieces already on column A (left column)
     /// exclude the pieces already on row 1 (bottom row)
-    fn bottom_left(&self) -> Vec<(u8, u8)> {
-        let src = ((!BitBoard::LEFT) & self.0) & ((!BitBoard::BOTTOM) & self.0);
+    fn bottom_left(&self) -> Vec<(u8, u8, bool)> {
+        let src = ((!BitBoard::LEFT) & self.current) & ((!BitBoard::BOTTOM) & self.current);
         let dst = src >> Self::BOTTOM_LEFT_MV;
 
-        return Self::get_moves(src, dst);
+        return self.get_moves(src, dst);
     }
 
-    fn bottom_right(&self) -> Vec<(u8, u8)> {
-        let src = ((!BitBoard::RIGHT) & self.0) & ((!BitBoard::BOTTOM) & self.0);
+    fn bottom_right(&self) -> Vec<(u8, u8, bool)> {
+        let src = ((!BitBoard::RIGHT) & self.current) & ((!BitBoard::BOTTOM) & self.current);
         let dst = src >> Self::BOTTOM_RIGHT_MV;
 
-        return Self::get_moves(src, dst);
+        return self.get_moves(src, dst);
     }
 
-    /// returns Vec<(from, to)>
-    fn get_moves(mut src: u64, mut dst: u64) -> Vec<(u8, u8)> {
+    /// returns Vec<(from, to, capture)>
+    fn get_moves(&self, mut src: u64, mut dst: u64) -> Vec<(u8, u8, bool)> {
         let mut moves = Vec::with_capacity(src.count_ones() as usize); // (from, to)
 
         while src != 0 {
             let from = src.trailing_zeros() as u8;
             let to = dst.trailing_zeros() as u8;
 
-            moves.push((from, to));
+            let capture = ((1 << to) & self.other) != 0;
+
+            moves.push((from, to, capture));
 
             src &= src - 1;
             dst &= dst - 1;
@@ -67,7 +70,7 @@ impl BitBoard {
         moves
     }
 
-    pub(crate) fn moves(&self, direction: Player) -> Vec<(u8, u8)> {
+    pub(crate) fn moves(&self, direction: Player) -> Vec<(u8, u8, bool)> {
         let (mut left, mut right) = match direction {
             Player::South => (self.top_left(), self.top_right()),
             Player::North => (self.bottom_left(), self.bottom_right()),
@@ -78,23 +81,17 @@ impl BitBoard {
 
         left
     }
-}
 
-impl Deref for BitBoard {
-    type Target = u64;
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    pub(super) fn new(current: u64, other: u64) -> Self {
+        Self { current, other }
     }
 }
 
-impl DerefMut for BitBoard {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl From<u64> for BitBoard {
-    fn from(value: u64) -> Self {
-        Self(value)
+impl From<(u64, u64)> for BitBoard {
+    fn from(value: (u64, u64)) -> Self {
+        Self {
+            current: value.0,
+            other: value.1,
+        }
     }
 }
