@@ -1,6 +1,6 @@
 use std::ops::Index;
 
-use crate::{bitboard::BitBoard, utils::Player};
+use crate::game::{bitboard::BitBoard, utils::Player};
 
 pub(crate) struct Board {
     /// white pieces and white kings

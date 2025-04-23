@@ -1,4 +1,4 @@
-use crate::utils::Player;
+use crate::game::utils::Player;
 
 pub(crate) struct BitBoard {
     pub(super) current: u64,
