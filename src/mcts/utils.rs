@@ -1,4 +1,5 @@
 pub(crate) mod limit;
+pub(crate) mod player;
 pub(crate) mod rand;
 pub(crate) mod reward;
 pub(crate) mod skill_level;
