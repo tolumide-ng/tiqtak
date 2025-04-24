@@ -11,8 +11,8 @@ use super::state::State;
 type Parent<S, A, P, E> = Option<Weak<RefCell<Node<S, A, P, E>>>>;
 pub struct Node<S: State<A, P, E>, A: Action, P: Player, E: MCTSError> {
     parent: Parent<S, A, P, E>,
-    visits: f64,
-    children: Vec<Rc<RefCell<Node<S, A, P, E>>>>,
+    pub(crate) visits: f64,
+    pub(crate) children: Vec<Rc<RefCell<Node<S, A, P, E>>>>,
     pub state: S,
     /// the move or action generated for this node
     actoin: Option<A>,
@@ -30,4 +30,7 @@ where
     P: Player,
     E: MCTSError,
 {
+    pub fn my_stats(&self) -> f64 {
+        *self.stats.get(&self.player).unwrap()
+    }
 }
