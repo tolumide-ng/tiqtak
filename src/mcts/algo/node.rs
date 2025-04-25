@@ -184,11 +184,11 @@ where
         self.state.view()
     }
 
-    pub fn back_propagate(&mut self, rewards: Vec<(P, f64)>) {
+    pub fn back_propagate(&mut self, rewards: Vec<(&P, f64)>) {
         self.visits += 1f64;
 
         for (player, reward) in &rewards {
-            let player_stat = self.stats.iter_mut().find(|(p, _)| p == player);
+            let player_stat = self.stats.iter_mut().find(|(p, _)| p == *player);
             if let Some((_, s)) = player_stat {
                 *s += *reward
             }
