@@ -8,8 +8,8 @@ pub(crate) struct BitBoard {
 impl BitBoard {
     const LEFT: u64 = 0x101010101010101;
     const RIGHT: u64 = 0x8080808080808080;
-    const BOTTOM: u64 = 0xff;
-    const TOP: u64 = 0xff00000000000000;
+    pub(crate) const BOTTOM: u64 = 0xff;
+    pub(crate) const TOP: u64 = 0xff00000000000000;
 
     const TOP_LEFT_MV: u8 = 7;
     const TOP_RIGHT_MV: u8 = 9;

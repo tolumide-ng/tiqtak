@@ -64,6 +64,43 @@ impl Board {
         natural_mvs.append(&mut king_mvs);
         natural_mvs
     }
+
+    pub(crate) fn play(&self, mv: (u8, u8)) -> Option<Self> {
+        let options = self.options(self.turn);
+        let valid = options.iter().find(|op| op.0 == mv.0 && op.1 == mv.1);
+
+        let Some((from, to, capture)) = valid else {
+            return None;
+        };
+
+        let (north, south, kings) = match self.turn {
+            Player::North => {
+                let north = (self.north & !(1 << from)) | 1 << to; // we remove the piece from src (and then add it to the target (|...))
+                let south = self.south & !((*capture as u64) << to);
+
+                let is_king = (BitBoard::BOTTOM & (1 << to)) != 0;
+                let kings = self.kings | ((is_king as u64) << to);
+
+                (north, south, kings)
+            }
+            Player::South => {
+                let south = (self.south & !(1 << from)) | 1 << to;
+                let north = self.north & !((*capture as u64) << to);
+
+                let is_king = (BitBoard::TOP & (1 << to)) != 0;
+                let kings = self.kings | ((is_king as u64) << to);
+
+                (north, south, kings)
+            }
+        };
+
+        return Some(Self {
+            north,
+            south,
+            kings,
+            turn: !self.turn,
+        });
+    }
 }
 
 impl Index<Player> for Board {
@@ -106,9 +143,8 @@ impl Display for Board {
                 write!(f, " {:^3} |", piece)?;
             }
             writeln!(f, "")?;
-            // (0..8).into_iter().for_each(|_| write!(f, "___").unwrap());
             writeln!(f, "-------------------------------------------------")?;
-            // writeln!(f, "")?;
+            writeln!(f, "Turn: {:?}", self.turn)?;
         }
 
         writeln!(f, "checkers board")?;
