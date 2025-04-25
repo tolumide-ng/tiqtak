@@ -1,6 +1,6 @@
 use super::limit::Limit;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Strength {
     /// Exploration constant of the MCTS formula
     pub(crate) e: f64,

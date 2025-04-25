@@ -1,11 +1,15 @@
 use game::{board::Board, utils::Player};
-use mcts::utils::{limit::Limit, skill_level::SkillLevel, strength::Strength};
+use mcts::{
+    algo::{state::State, tree_search::MCTS},
+    utils::{limit::Limit, reward::Reward, skill_level::SkillLevel, strength::Strength},
+};
 
 pub(crate) mod game;
 pub(crate) mod mcts; // should this be moved into a separate workspace?
 
 fn main() {
     for i in 0..4 {
+        println!("------------------ROUND {}------------------", i);
         let north = Player::North;
         let south = Player::South;
         let players = vec![north, south];
@@ -15,7 +19,31 @@ fn main() {
         let limit = Limit::Time(1000);
         let skills = SkillLevel::Two(Strength::new(exploration_constant, cost_of_losing, limit));
 
-        let board = Board::new();
+        let mut board = Board::new();
+
+        while board.get_reward() == Reward::Continue {
+            let mut mcts = MCTS::new(board, board.turn, players.clone(), skills);
+
+            let mv = mcts.run();
+
+            board = board.play(mv).unwrap();
+
+            println!("{board}");
+        }
+
+        match board.get_reward() {
+            Reward::WonBy(p) => {
+                println!(
+                    "--------------------------------------------PLAYER {:?} WON---------------------------------------------- \n\n\n\n",
+                    p
+                );
+            }
+            _ => {
+                println!(
+                    "--------------------------------------------DRAW---------------------------------------------- \n\n\n\n"
+                );
+            }
+        }
 
         // while board.
     }

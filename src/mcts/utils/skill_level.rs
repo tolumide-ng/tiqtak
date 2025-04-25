@@ -2,7 +2,7 @@ use crate::mcts::utils::limit::Limit;
 
 use super::strength::Strength;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum SkillLevel {
     Zero(Strength),
     One(Strength),
