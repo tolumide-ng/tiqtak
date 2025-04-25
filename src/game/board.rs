@@ -2,15 +2,18 @@ use std::{fmt::Display, ops::Index};
 
 use crate::game::{bitboard::BitBoard, utils::Player};
 
+use super::action::Action;
+
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct Board {
     /// white pieces and white kings
-    north: u64,
+    pub(crate) north: u64,
     /// black pieces pieces and black kings
-    south: u64,
+    pub(crate) south: u64,
     /// black and white kings
-    kings: u64,
+    pub(crate) kings: u64,
     /// 0 is for first player, and 1 is for bottom player
-    turn: Player,
+    pub(crate) turn: Player,
 }
 
 impl Board {
@@ -52,7 +55,7 @@ impl Board {
 
     /// returns all the possible options a selected piece can play
     /// Vec<(from, to, capture)>
-    pub(crate) fn options(&self, turn: Player) -> Vec<(u8, u8, bool)> {
+    pub(crate) fn options(&self, turn: Player) -> Vec<Action> {
         let regulars = self.regular(turn);
         let kings = self.kings(turn);
 
@@ -65,30 +68,32 @@ impl Board {
         natural_mvs
     }
 
-    pub(crate) fn play(&self, mv: (u8, u8)) -> Option<Self> {
+    pub(crate) fn play(&self, mv: Action) -> Option<Self> {
         let options = self.options(self.turn);
-        let valid = options.iter().find(|op| op.0 == mv.0 && op.1 == mv.1);
+        let valid = options
+            .iter()
+            .find(|op| op.src == mv.src && op.tgt == mv.tgt);
 
-        let Some((from, to, capture)) = valid else {
+        let Some(Action { src, tgt, capture }) = valid else {
             return None;
         };
 
         let (north, south, kings) = match self.turn {
             Player::North => {
-                let north = (self.north & !(1 << from)) | 1 << to; // we remove the piece from src (and then add it to the target (|...))
-                let south = self.south & !((*capture as u64) << to);
+                let north = (self.north & !(1 << src)) | 1 << tgt; // we remove the piece from src (and then add it to the target (|...))
+                let south = self.south & !((*capture as u64) << tgt);
 
-                let is_king = (BitBoard::BOTTOM & (1 << to)) != 0;
-                let kings = self.kings | ((is_king as u64) << to);
+                let is_king = (BitBoard::BOTTOM & (1 << tgt)) != 0;
+                let kings = self.kings | ((is_king as u64) << tgt);
 
                 (north, south, kings)
             }
             Player::South => {
-                let south = (self.south & !(1 << from)) | 1 << to;
-                let north = self.north & !((*capture as u64) << to);
+                let south = (self.south & !(1 << src)) | 1 << tgt;
+                let north = self.north & !((*capture as u64) << tgt);
 
-                let is_king = (BitBoard::TOP & (1 << to)) != 0;
-                let kings = self.kings | ((is_king as u64) << to);
+                let is_king = (BitBoard::TOP & (1 << tgt)) != 0;
+                let kings = self.kings | ((is_king as u64) << tgt);
 
                 (north, south, kings)
             }

@@ -1,5 +1,7 @@
 use crate::game::utils::Player;
 
+use super::action::Action;
+
 pub(crate) struct BitBoard {
     current: u64,
     other: u64,
@@ -19,7 +21,7 @@ impl BitBoard {
     /// exclude the pieces already on column A (left column)
     /// exclude the pieces already on row 8 (top row)
     /// pieces that are safe to move top-left
-    fn top_left(&self) -> Vec<(u8, u8, bool)> {
+    fn top_left(&self) -> Vec<Action> {
         let src = ((!BitBoard::LEFT) & self.current) & ((!BitBoard::TOP) & self.current);
         let dst = src << Self::TOP_LEFT_MV;
 
@@ -28,7 +30,7 @@ impl BitBoard {
 
     /// exclude the pieces already on column H (right column)
     /// exclude the pieces already on row 8 (top row)
-    fn top_right(&self) -> Vec<(u8, u8, bool)> {
+    fn top_right(&self) -> Vec<Action> {
         let src = ((!BitBoard::RIGHT) & self.current) & ((!BitBoard::TOP) & self.current);
         let dst = src << Self::TOP_RIGHT_MV;
 
@@ -37,14 +39,14 @@ impl BitBoard {
 
     /// exclude the pieces already on column A (left column)
     /// exclude the pieces already on row 1 (bottom row)
-    fn bottom_left(&self) -> Vec<(u8, u8, bool)> {
+    fn bottom_left(&self) -> Vec<Action> {
         let src = ((!BitBoard::LEFT) & self.current) & ((!BitBoard::BOTTOM) & self.current);
         let dst = src >> Self::BOTTOM_LEFT_MV;
 
         return self.get_moves(src, dst);
     }
 
-    fn bottom_right(&self) -> Vec<(u8, u8, bool)> {
+    fn bottom_right(&self) -> Vec<Action> {
         let src = ((!BitBoard::RIGHT) & self.current) & ((!BitBoard::BOTTOM) & self.current);
         let dst = src >> Self::BOTTOM_RIGHT_MV;
 
@@ -52,7 +54,7 @@ impl BitBoard {
     }
 
     /// returns Vec<(from, to, capture)>
-    fn get_moves(&self, mut src: u64, mut dst: u64) -> Vec<(u8, u8, bool)> {
+    fn get_moves(&self, mut src: u64, mut dst: u64) -> Vec<Action> {
         let mut moves = Vec::with_capacity(src.count_ones() as usize); // (from, to)
 
         while src != 0 {
@@ -61,7 +63,7 @@ impl BitBoard {
 
             let capture = ((1 << to) & self.other) != 0;
 
-            moves.push((from, to, capture));
+            moves.push(Action::new(from, to, capture));
 
             src &= src - 1;
             dst &= dst - 1;
@@ -70,7 +72,7 @@ impl BitBoard {
         moves
     }
 
-    pub(crate) fn moves(&self, direction: Player) -> Vec<(u8, u8, bool)> {
+    pub(crate) fn moves(&self, direction: Player) -> Vec<Action> {
         let (mut left, mut right) = match direction {
             Player::South => (self.top_left(), self.top_right()),
             Player::North => (self.bottom_left(), self.bottom_right()),

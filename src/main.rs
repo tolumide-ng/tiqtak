@@ -16,6 +16,8 @@ fn main() {
         let skills = SkillLevel::Two(Strength::new(exploration_constant, cost_of_losing, limit));
 
         let board = Board::new();
+
+        // while board.
     }
 
     // println!("{board}");

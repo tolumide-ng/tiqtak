@@ -1,6 +1,8 @@
 use std::ops::Not;
 
-use crate::mcts::traits::Player as PlayerTrait;
+use thiserror::Error;
+
+use crate::mcts::traits::{MCTSError, Player as PlayerTrait};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum Player {
@@ -20,3 +22,11 @@ impl Not for Player {
 }
 
 impl PlayerTrait for Player {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+pub enum AppError {
+    #[error("Illegal move")]
+    IllegalMove,
+}
+
+impl MCTSError for AppError {}

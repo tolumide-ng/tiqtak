@@ -1,7 +1,7 @@
 use std::{error::Error, fmt::Debug, hash::Hash};
 
 /// The game action (e.g move to)
-pub(crate) trait Action: Debug + Eq + PartialEq + Hash + Clone + Copy {}
+pub(crate) trait Action: Debug + Eq + PartialEq + Clone + Copy {}
 
 /// Basic errors from this algo
 pub(crate) trait MCTSError: Error {}
