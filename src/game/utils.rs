@@ -1,6 +1,8 @@
 use std::ops::Not;
 
-#[derive(Debug, Clone, Copy)]
+use crate::mcts::traits::Player as PlayerTrait;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum Player {
     North,
     South,
@@ -16,3 +18,5 @@ impl Not for Player {
         }
     }
 }
+
+impl PlayerTrait for Player {}

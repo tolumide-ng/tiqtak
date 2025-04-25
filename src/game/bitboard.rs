@@ -1,8 +1,8 @@
 use crate::game::utils::Player;
 
 pub(crate) struct BitBoard {
-    pub(super) current: u64,
-    pub(super) other: u64,
+    current: u64,
+    other: u64,
 }
 
 impl BitBoard {

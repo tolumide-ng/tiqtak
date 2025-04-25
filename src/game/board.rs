@@ -1,4 +1,4 @@
-use std::ops::Index;
+use std::{fmt::Display, ops::Index};
 
 use crate::game::{bitboard::BitBoard, utils::Player};
 
@@ -14,6 +14,18 @@ pub(crate) struct Board {
 }
 
 impl Board {
+    pub(crate) fn new() -> Self {
+        let north: u64 = 0xaa55aa0000000000;
+        let south: u64 = 0x55aa55;
+
+        Self {
+            north,
+            south,
+            kings: 0,
+            turn: Player::South,
+        }
+    }
+
     // to get the left move exclude any piece that is already on column A
     // to get the right move exclude any piece that is already on column H
 
@@ -62,5 +74,45 @@ impl Index<Player> for Board {
             Player::North => &self.north,
             Player::South => &self.south,
         }
+    }
+}
+
+impl Display for Board {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let dimension = 8;
+
+        writeln!(f, "-------------------------------------------------")?;
+        // writeln!(f, "")?;
+        for row in (0..8).rev() {
+            for col in 0..8 {
+                let index = (row * dimension) + col;
+                let cell = 1u64 << index;
+                let king = (cell & self.kings) != 0; // whether or not this piece is a king
+
+                let bp = (cell & self.south) != 0; // black piece (southern)
+                let wp = (cell & self.north) != 0; // white piece (northern)
+
+                let piece = match (bp, wp, king) {
+                    (true, false, false) => "B",
+                    (true, false, true) => "BK",
+                    (false, true, false) => "W",
+                    (false, true, true) => "WK",
+                    _ => "",
+                };
+
+                if col == 0 {
+                    write!(f, "|")?;
+                }
+                write!(f, " {:^3} |", piece)?;
+            }
+            writeln!(f, "")?;
+            // (0..8).into_iter().for_each(|_| write!(f, "___").unwrap());
+            writeln!(f, "-------------------------------------------------")?;
+            // writeln!(f, "")?;
+        }
+
+        writeln!(f, "checkers board")?;
+
+        Ok(())
     }
 }
