@@ -5,6 +5,7 @@ use super::action::Action;
 pub(crate) struct BitBoard {
     current: u64,
     other: u64,
+    team: u64,
 }
 
 impl BitBoard {
@@ -35,7 +36,7 @@ impl BitBoard {
             let self_on_target = self.current & tgt != 0;
             let enemy_on_target = self.other & tgt != 0;
             let valid_capture = ((tgt & !Self::TOP & !Self::LEFT) != 0)
-                && ((tgt << Self::TOP_LEFT_MV) & (self.current | self.other) == 0);
+                && ((tgt << Self::TOP_LEFT_MV) & (self.current | self.other | self.team) == 0);
 
             if self_on_target || (enemy_on_target && !valid_capture) {
                 continue;
@@ -69,7 +70,7 @@ impl BitBoard {
             let self_on_target = self.current & tgt != 0;
             let enemy_on_target = self.other & tgt != 0;
             let valid_capture = ((tgt & !Self::TOP & !Self::RIGHT) != 0)
-                && ((tgt << Self::TOP_RIGHT_MV) & (self.current | self.other) == 0);
+                && ((tgt << Self::TOP_RIGHT_MV) & (self.current | self.other | self.team) == 0);
 
             if self_on_target || (enemy_on_target && !valid_capture) {
                 continue;
@@ -105,20 +106,20 @@ impl BitBoard {
             let self_on_target = self.current & to != 0;
             let enemy_on_target = self.other & to != 0;
             let valid_capture = ((to & !Self::BOTTOM & !Self::RIGHT) != 0)
-                && ((to >> Self::BOTTOM_RIGHT_MV) & (self.current | self.other) == 0);
+                && ((to >> Self::BOTTOM_RIGHT_MV) & (self.current | self.other | self.team) == 0);
 
-            println!(
-                "this is bottom right self on target>> {self_on_target}, enemy on target: {enemy_on_target}"
-            );
+            // println!(
+            //     "this is bottom right self on target>> {self_on_target}, enemy on target: {enemy_on_target}"
+            // );
 
             // let xxxo = (to >> Self::BOTTOM_RIGHT_MV) & (self.current | self.other);
             // println!("the xx0 {}", xxxo);
 
-            let b = Board::with(0, to >> Self::BOTTOM_RIGHT_MV, 0, Player::South);
-            let bb = Board::with(0, self.current, 0, Player::South);
-            println!("\n {}", b);
-            println!("\n {}", bb);
-            println!("XXXX");
+            // let b = Board::with(0, to >> Self::BOTTOM_RIGHT_MV, 0, Player::South);
+            // let bb = Board::with(0, self.current, 0, Player::South);
+            // println!("\n {}", b);
+            // println!("\n {}", bb);
+            // println!("XXXX");
 
             if self_on_target || (enemy_on_target && !valid_capture) {
                 continue;
@@ -149,8 +150,12 @@ impl BitBoard {
         left
     }
 
-    pub(super) fn new(current: u64, other: u64) -> Self {
-        Self { current, other }
+    pub(super) fn new(current: u64, other: u64, team: u64) -> Self {
+        Self {
+            current,
+            other,
+            team,
+        }
     }
 
     /// exclude the pieces already on column A (left column)
@@ -169,7 +174,7 @@ impl BitBoard {
             let self_on_target = self.current & to != 0;
             let enemy_on_target = self.other & to != 0;
             let valid_capture = ((to & !Self::LEFT & !Self::BOTTOM) != 0)
-                && ((to >> Self::BOTTOM_LEFT_MV) & (self.current | self.other) == 0);
+                && ((to >> Self::BOTTOM_LEFT_MV) & (self.current | self.other | self.team) == 0);
 
             if self_on_target || (enemy_on_target && !valid_capture) {
                 continue;
@@ -191,11 +196,12 @@ impl BitBoard {
     }
 }
 
-impl From<(u64, u64)> for BitBoard {
-    fn from(value: (u64, u64)) -> Self {
+impl From<(u64, u64, u64)> for BitBoard {
+    fn from(value: (u64, u64, u64)) -> Self {
         Self {
             current: value.0,
             other: value.1,
+            team: value.2,
         }
     }
 }
@@ -225,27 +231,22 @@ mod tests {
         let kings = 1 << 42;
 
         let board = Board::with(north, south, kings, Player::South);
-
-        println!("{board}");
-
-        let mvs = board.options(Player::South);
-
-        println!(
-            "the mvs are >>> {:?}",
-            // mvs,
-            mvs.iter().map(|x| x.to_string()).collect::<Vec<_>>()
-        );
+        let received = board.options(Player::South);
 
         let expected = [
-            (26, 40, true),
+            (26u8, 40u8, true),
             (26, 44, true),
-            (29, 37, false),
+            (28, 37, false),
             (21, 30, false),
-            //
-            (21, 30, false),
-            (21, 30, false),
-            (21, 30, false),
+            (42, 24, true),
+            (42, 49, false),
+            (42, 51, false),
         ];
-        assert_eq!(mvs.len(), 5);
+
+        assert_eq!(received.len(), expected.len());
+
+        expected
+            .iter()
+            .for_each(|mv| assert!(received.contains(&Action::from(*mv))));
     }
 }

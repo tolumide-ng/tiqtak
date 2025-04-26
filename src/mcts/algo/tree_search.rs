@@ -114,14 +114,9 @@ where
             Limit::Time(time_limit) => {
                 while &start.elapsed().as_millis() <= time_limit {
                     let selected_node = node.as_ref().borrow_mut().select(constant);
-                    println!(
-                        "*********** STILL GOOD *********** {}",
-                        !selected_node.as_ref().borrow().is_terminal()
-                    );
                     if !selected_node.as_ref().borrow().is_terminal() {
                         let child = selected_node.as_ref().borrow_mut().expand();
                         let rewards = self.simulate(child);
-                        println!("ALL THE SEEN REWARDS ARE ******** {:?}", rewards);
                         selected_node.as_ref().borrow_mut().back_propagate(rewards);
                     }
                 }

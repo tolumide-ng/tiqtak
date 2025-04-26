@@ -69,8 +69,8 @@ impl Board {
         let kings = self.kings(turn);
 
         let opponent = self[!turn];
-        let mut natural_mvs = BitBoard::from((regulars | kings, opponent)).moves(turn);
-        let mut king_mvs = BitBoard::from((kings, opponent)).moves(!turn); // extra king moves
+        let mut natural_mvs = BitBoard::from((regulars | kings, opponent, 0)).moves(turn);
+        let mut king_mvs = BitBoard::from((kings, opponent, regulars)).moves(!turn); // extra king moves
 
         natural_mvs.reserve(king_mvs.len());
         natural_mvs.append(&mut king_mvs);

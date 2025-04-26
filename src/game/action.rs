@@ -9,6 +9,12 @@ pub(crate) struct Action {
     pub(crate) capture: bool,
 }
 
+impl From<(u8, u8, bool)> for Action {
+    fn from((src, tgt, capture): (u8, u8, bool)) -> Self {
+        Self { src, tgt, capture }
+    }
+}
+
 impl Action {
     pub(crate) fn new(src: u8, tgt: u8, capture: bool) -> Self {
         Self { src, tgt, capture }
