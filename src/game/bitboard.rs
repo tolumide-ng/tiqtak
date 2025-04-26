@@ -98,10 +98,27 @@ impl BitBoard {
             let mut to = (1 << from) >> Self::BOTTOM_RIGHT_MV;
             let mut capture = false;
 
+            // there's a current problem with my appraoch, assuming the king only when trying to access its other
+            // movements without providing it's team mates means we possibly make silly assumptions that the landing
+            // spot for the king after a possible capture doesn't include a teammate which is NOT OKAY AND WRONG!!!
+
             let self_on_target = self.current & to != 0;
             let enemy_on_target = self.other & to != 0;
             let valid_capture = ((to & !Self::BOTTOM & !Self::RIGHT) != 0)
                 && ((to >> Self::BOTTOM_RIGHT_MV) & (self.current | self.other) == 0);
+
+            println!(
+                "this is bottom right self on target>> {self_on_target}, enemy on target: {enemy_on_target}"
+            );
+
+            // let xxxo = (to >> Self::BOTTOM_RIGHT_MV) & (self.current | self.other);
+            // println!("the xx0 {}", xxxo);
+
+            let b = Board::with(0, to >> Self::BOTTOM_RIGHT_MV, 0, Player::South);
+            let bb = Board::with(0, self.current, 0, Player::South);
+            println!("\n {}", b);
+            println!("\n {}", bb);
+            println!("XXXX");
 
             if self_on_target || (enemy_on_target && !valid_capture) {
                 continue;
@@ -197,11 +214,38 @@ mod tests {
         println!("{board}");
 
         let mvs = board.options(Player::South);
+        assert_eq!(mvs.len(), 6);
+    }
+
+    #[test]
+    fn should_return_all_south_moves_including_kings() {
+        let north = 0x520000a00000000u64;
+        let south = 0x40014200000u64;
+
+        let kings = 1 << 42;
+
+        let board = Board::with(north, south, kings, Player::South);
+
+        println!("{board}");
+
+        let mvs = board.options(Player::South);
+
         println!(
             "the mvs are >>> {:?}",
             // mvs,
             mvs.iter().map(|x| x.to_string()).collect::<Vec<_>>()
         );
-        assert_eq!(mvs.len(), 6);
+
+        let expected = [
+            (26, 40, true),
+            (26, 44, true),
+            (29, 37, false),
+            (21, 30, false),
+            //
+            (21, 30, false),
+            (21, 30, false),
+            (21, 30, false),
+        ];
+        assert_eq!(mvs.len(), 5);
     }
 }
