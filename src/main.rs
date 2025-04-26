@@ -16,7 +16,8 @@ fn main() {
 
         let exploration_constant = 1.41421356237_f64;
         let cost_of_losing = -1.25_f64;
-        let limit = Limit::Time(1000);
+        // let limit = Limit::Time(1000);
+        let limit = Limit::Time(100);
         let skills = SkillLevel::Two(Strength::new(exploration_constant, cost_of_losing, limit));
 
         let mut board = Board::new();
@@ -24,9 +25,13 @@ fn main() {
         while board.get_reward() == Reward::Continue {
             let mut mcts = MCTS::new(board, board.turn, players.clone(), skills);
 
+            println!("before run");
+
             let mv = mcts.run();
+            println!("after run>>>>");
 
             board = board.play(mv).unwrap();
+            println!("board >\n {board}");
 
             println!("{board}");
         }
