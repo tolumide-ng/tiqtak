@@ -35,7 +35,7 @@ impl BitBoard {
             let self_on_target = self.current & tgt != 0;
             let enemy_on_target = self.other & tgt != 0;
             let valid_capture = ((tgt & !Self::TOP & !Self::LEFT) != 0)
-                && ((tgt >> Self::TOP_LEFT_MV) & (self.current | self.other) == 0);
+                && ((tgt << Self::TOP_LEFT_MV) & (self.current | self.other) == 0);
 
             if self_on_target || (enemy_on_target && !valid_capture) {
                 continue;
@@ -69,7 +69,7 @@ impl BitBoard {
             let self_on_target = self.current & tgt != 0;
             let enemy_on_target = self.other & tgt != 0;
             let valid_capture = ((tgt & !Self::TOP & !Self::RIGHT) != 0)
-                && ((tgt >> Self::TOP_RIGHT_MV) & (self.current | self.other) == 0);
+                && ((tgt << Self::TOP_RIGHT_MV) & (self.current | self.other) == 0);
 
             if self_on_target || (enemy_on_target && !valid_capture) {
                 continue;
