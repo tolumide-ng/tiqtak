@@ -29,6 +29,15 @@ impl Board {
         }
     }
 
+    pub(crate) fn with(north: u64, south: u64, kings: u64, turn: Player) -> Self {
+        Self {
+            north,
+            south,
+            kings,
+            turn,
+        }
+    }
+
     // to get the left move exclude any piece that is already on column A
     // to get the right move exclude any piece that is already on column H
 
@@ -123,9 +132,10 @@ impl Display for Board {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let dimension = 8;
 
-        writeln!(f, "-------------------------------------------------")?;
+        writeln!(f, "---------------------------------------------------")?;
         // writeln!(f, "")?;
         for row in (0..8).rev() {
+            write!(f, "{} ", row + 1)?;
             for col in 0..8 {
                 let index = (row * dimension) + col;
                 let cell = 1u64 << index;
@@ -148,10 +158,12 @@ impl Display for Board {
                 write!(f, " {:^3} |", piece)?;
             }
             writeln!(f, "")?;
-            writeln!(f, "-------------------------------------------------")?;
-            writeln!(f, "Turn: {:?}", self.turn)?;
+            writeln!(f, "---------------------------------------------------")?;
         }
+        writeln!(f, "  |  A  |  B  |  C  |  D  |  E  |  F  |  G  |  H  | ")?;
+        writeln!(f, "---------------------------------------------------")?;
 
+        writeln!(f, "Turn: {:?}", self.turn)?;
         writeln!(f, "checkers board")?;
 
         Ok(())

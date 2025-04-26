@@ -182,3 +182,26 @@ impl From<(u64, u64)> for BitBoard {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn should_return_all_possible_moves_for_south_player() {
+        let north = 0x520000a00000000u64;
+        let south = 0x40014200000u64;
+
+        let board = Board::with(north, south, 0, Player::South);
+
+        println!("{board}");
+
+        let mvs = board.options(Player::South);
+        println!(
+            "the mvs are >>> {:?}",
+            // mvs,
+            mvs.iter().map(|x| x.to_string()).collect::<Vec<_>>()
+        );
+        assert_eq!(mvs.len(), 6);
+    }
+}
