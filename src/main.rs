@@ -28,10 +28,8 @@ fn main() {
             println!("before run");
 
             let mv = mcts.run();
-            println!("after run>>>>");
 
             board = board.play(mv).unwrap();
-            println!("board >\n {board}");
 
             println!("{board}");
         }

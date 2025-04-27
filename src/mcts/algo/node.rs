@@ -167,11 +167,14 @@ where
     pub fn expand(&mut self) -> Rc<RefCell<Node<S, A, P, E>>> {
         let game_ended = self.children.len() == self.state.get_actions().len();
 
-        println!("the children here are ***** {game_ended}");
+        // println!("the children here are ***** {game_ended}");
 
         if !game_ended {
             let actions = self.get_unexpanded_actions();
-            println!("the unexpanded actions are ????? {:?}", actions);
+
+            actions.iter().for_each(|x| println!("{:?}", x.to_string()));
+
+            // println!("the unexpanded actions are ????? {:?}", actions);
 
             let index = getrand(actions.len()).unwrap();
             let action = &actions[index];

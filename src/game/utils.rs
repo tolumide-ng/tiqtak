@@ -5,6 +5,7 @@ use thiserror::Error;
 use crate::mcts::traits::{MCTSError, Player as PlayerTrait};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(u8)]
 pub(crate) enum Player {
     North,
     South,

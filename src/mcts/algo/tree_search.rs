@@ -72,6 +72,7 @@ where
         let loss_penalty = self.level.loss_penalty();
 
         while !current_node.as_ref().borrow().is_terminal() {
+            // println!("HOW MANY CURRENT NODES ARE THERE !!!!!!!");
             let action = self.choose(current_node.as_ref().borrow().get_actions());
 
             let (next_state, next_player) = current_node.as_ref().borrow().execute(&action);
@@ -116,7 +117,10 @@ where
                     let selected_node = node.as_ref().borrow_mut().select(constant);
                     if !selected_node.as_ref().borrow().is_terminal() {
                         let child = selected_node.as_ref().borrow_mut().expand();
+                        // println!("all the children >>>>>> {:?}", child);
+                        println!("BEFORE SIMULATION********");
                         let rewards = self.simulate(child);
+                        println!("done simulating>>>>>>>");
                         selected_node.as_ref().borrow_mut().back_propagate(rewards);
                     }
                 }

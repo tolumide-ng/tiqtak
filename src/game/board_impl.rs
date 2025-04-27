@@ -19,6 +19,11 @@ impl State<Action, Player, AppError> for Board {
             return Reward::WonBy(Player::North);
         }
 
+        let (n, s) = self.qmvs;
+        if n == 20 || s == 20 {
+            return Reward::Draw;
+        }
+
         let possible_mvs = self.get_actions();
 
         if possible_mvs.len() == 0 {
@@ -29,7 +34,8 @@ impl State<Action, Player, AppError> for Board {
     }
 
     fn apply_action(&self, action: &Action) -> Result<(Self, Player), AppError> {
-        let Some(state) = self.play(*action) else {
+        let mut board = self.clone();
+        let Some(state) = board.play(*action) else {
             return Err(AppError::IllegalMove);
         };
 

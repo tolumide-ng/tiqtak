@@ -65,8 +65,8 @@ impl BitBoard {
 
                 // if this current pirce is a king, we need to be able to continue with that process here
                 let board = match turn {
-                    Player::North => Board::with(new_current, new_others, kings, turn),
-                    Player::South => Board::with(new_others, new_current, kings, turn),
+                    Player::North => Board::with(new_current, new_others, kings, turn, (0, 0)),
+                    Player::South => Board::with(new_others, new_current, kings, turn, (0, 0)),
                 };
 
                 let result = board.options(turn);
@@ -160,7 +160,7 @@ mod tests {
         let north = 0x520000a00000000u64;
         let south = 0x40014200000u64;
 
-        let board = Board::with(north, south, 0, Player::South);
+        let board = Board::with(north, south, 0, Player::South, (0, 0));
         let received = board.options(Player::South);
 
         let expected = [
@@ -186,7 +186,7 @@ mod tests {
 
         let kings = 1 << 42;
 
-        let board = Board::with(north, south, kings, Player::South);
+        let board = Board::with(north, south, kings, Player::South, (0, 0));
         let received = board.options(Player::South);
 
         let expected = [
@@ -216,7 +216,7 @@ mod tests {
 
         let kings = 1 << 42;
 
-        let board = Board::with(north, south, kings, Player::North);
+        let board = Board::with(north, south, kings, Player::North, (0, 0));
         let received = board.options(Player::North);
 
         let expected = [
@@ -262,7 +262,7 @@ mod tests {
         let south = 0x20000000000u64;
         let north = 0x14000008000000u64;
 
-        let board = Board::with(north, south, 0, Player::South);
+        let board = Board::with(north, south, 0, Player::South, (0, 0));
         let received = board.options(Player::South);
 
         let expected = [

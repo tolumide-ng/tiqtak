@@ -12,6 +12,10 @@ pub(crate) struct Board {
     pub(crate) kings: u64,
     /// 0 is for first player, and 1 is for bottom player
     pub(crate) turn: Player,
+    /// Quiet Moves (quite_mvs): The number of moves that's happened without a capture so far
+    /// this value automatically resets to 0 for both sides after any capture.
+    /// any of the values reaching 20 would result ina  "draw"
+    pub(crate) qmvs: (u8, u8),
 }
 
 impl Board {
@@ -24,15 +28,17 @@ impl Board {
             south,
             kings: 0,
             turn: Player::South,
+            qmvs: (0, 0),
         }
     }
 
-    pub(crate) fn with(north: u64, south: u64, kings: u64, turn: Player) -> Self {
+    pub(crate) fn with(north: u64, south: u64, kings: u64, turn: Player, qmvs: (u8, u8)) -> Self {
         Self {
             north,
             south,
             kings,
             turn,
+            qmvs,
         }
     }
 
@@ -75,7 +81,7 @@ impl Board {
         natural_mvs
     }
 
-    pub(crate) fn play(&self, mv: Action) -> Option<Self> {
+    pub(crate) fn play(&mut self, mv: Action) -> Option<Self> {
         let options = self.options(self.turn);
         let valid = options
             .iter()
@@ -88,7 +94,7 @@ impl Board {
             return None;
         };
 
-        let (north, south, kings) = match self.turn {
+        let (north, south, kings, qmvs) = match self.turn {
             Player::North => {
                 let north = (self.north & !(1 << src)) | 1 << tgt; // we remove the piece from src (and then add it to the target (|...))
                 let south = self.south & !((*capture as u64) << tgt);
@@ -96,7 +102,10 @@ impl Board {
                 let is_king = (BitBoard::BOTTOM & (1 << tgt)) != 0;
                 let kings = self.kings | ((is_king as u64) << tgt);
 
-                (north, south, kings)
+                let cp = (!mv.capture) as u8;
+                let qmvs = ((self.qmvs.0 + 1) * cp, self.qmvs.1 * cp);
+
+                (north, south, kings, qmvs)
             }
             Player::South => {
                 let south = (self.south & !(1 << src)) | 1 << tgt;
@@ -105,16 +114,34 @@ impl Board {
                 let is_king = (BitBoard::TOP & (1 << tgt)) != 0;
                 let kings = self.kings | ((is_king as u64) << tgt);
 
-                (north, south, kings)
+                let cp = (!mv.capture) as u8;
+                let qmvs = (self.qmvs.0 * cp, (self.qmvs.1 + 1) * cp);
+
+                (north, south, kings, qmvs)
             }
         };
 
-        return Some(Self {
-            north,
-            south,
-            kings,
-            turn: !self.turn,
-        });
+        // return Some(Self {
+        //     north,
+        //     south,
+        //     kings,
+        //     turn: !self.turn,
+        //      qmvs: ()
+        // });
+        self.north = north;
+        self.south = south;
+        self.kings = kings;
+        self.turn = !self.turn;
+        self.qmvs.0 += (mv.capture && self.turn == Player::North) as u8;
+        self.qmvs.1 += (mv.capture && self.turn == Player::South) as u8;
+        // self = Self {
+        //     north,
+        //     south,
+        //     kings,
+        //     turn: !self.turn,
+        // };
+
+        return Some(*self);
     }
 }
 
