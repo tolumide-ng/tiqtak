@@ -40,16 +40,16 @@ impl BitBoard {
             }
 
             if enemy_on_target {
-                let new_others = (self.other & !tgt) | self.team;
+                let new_others = (self.other & !tgt);
                 tgt = tgt << shift;
-                let new_current = (self.current & !(1 << src)) | tgt;
+                let new_current = (self.current & !(1 << src)) | tgt | self.team;
                 capture = true;
 
                 let board = Board::with(new_current, new_others, 0, Player::South);
                 let mut result = board
                     .options(Player::South)
                     .into_iter()
-                    .filter(|x| x.capture)
+                    .filter(|x| x.capture && tgt.trailing_zeros() as u8 == x.tgt)
                     .collect::<Vec<_>>();
 
                 mvs.reserve(result.len());
@@ -84,9 +84,9 @@ impl BitBoard {
             }
 
             if enemy_on_target {
-                let new_others = (self.other & !tgt) | self.team;
+                let new_others = (self.other & !tgt);
                 tgt = tgt >> shift;
-                let new_current = (self.current & !(1 << src)) | tgt;
+                let new_current = (self.current & !(1 << src)) | tgt | self.team;
                 capture = true;
 
                 // Assumption here: we don't care whether this is a king or nah, we also don't care
@@ -94,7 +94,7 @@ impl BitBoard {
                 let mut result = board
                     .options(Player::North)
                     .into_iter()
-                    .filter(|x| x.capture)
+                    .filter(|x| x.capture && tgt.trailing_zeros() as u8 == x.tgt)
                     .collect::<Vec<_>>();
 
                 mvs.reserve(result.len());
