@@ -19,32 +19,41 @@ impl BitBoard {
     const BOTTOM_LEFT_MV: u8 = 9;
     const BOTTOM_RIGHT_MV: u8 = 7;
 
-    /// exclude the pieces already on column A (left column)
-    /// exclude the pieces already on row 8 (top row)
-    /// pieces that are safe to move top-left
-    fn top_left(&self) -> Vec<Action> {
-        let mut pcs = (!Self::TOP) & self.current & !Self::LEFT;
+    fn move_north(&self, mask: u64, shift: u8) -> Vec<Action> {
+        let mut pcs = (!Self::TOP) & self.current & !mask;
         let mut mvs = Vec::with_capacity(pcs.count_ones() as usize);
 
         while pcs != 0 {
             let src = pcs.trailing_zeros() as u8;
             pcs &= pcs - 1;
 
-            let mut tgt = (1 << src) << Self::TOP_LEFT_MV;
+            let mut tgt = (1 << src) << shift;
             let mut capture = false;
 
             let self_on_target = self.current & tgt != 0;
             let enemy_on_target = self.other & tgt != 0;
-            let valid_capture = ((tgt & !Self::TOP & !Self::LEFT) != 0)
-                && ((tgt << Self::TOP_LEFT_MV) & (self.current | self.other | self.team) == 0);
+            let valid_capture = ((tgt & !Self::TOP & !mask) != 0)
+                && ((tgt << shift) & (self.current | self.other | self.team) == 0);
 
             if self_on_target || (enemy_on_target && !valid_capture) {
                 continue;
             }
 
             if enemy_on_target {
-                tgt = tgt << Self::TOP_LEFT_MV;
+                let new_others = (self.other & !tgt) | self.team;
+                tgt = tgt << shift;
+                let new_current = (self.current & !(1 << src)) | tgt;
                 capture = true;
+
+                let board = Board::with(new_current, new_others, 0, Player::South);
+                let mut result = board
+                    .options(Player::South)
+                    .into_iter()
+                    .filter(|x| x.capture)
+                    .collect::<Vec<_>>();
+
+                mvs.reserve(result.len());
+                mvs.append(&mut result);
             }
 
             let tgt = tgt.trailing_zeros() as u8;
@@ -52,90 +61,74 @@ impl BitBoard {
         }
 
         mvs
+    }
+
+    fn move_south(&self, mask: u64, shift: u8) -> Vec<Action> {
+        let mut pcs = (!Self::BOTTOM) & self.current & (!mask);
+        let mut mvs = Vec::with_capacity(pcs.count_ones() as usize);
+
+        while pcs != 0 {
+            let src = pcs.trailing_zeros() as u8;
+            pcs &= pcs - 1;
+
+            let mut tgt = (1 << src) >> shift;
+            let mut capture = false;
+
+            let self_on_target = self.current & tgt != 0;
+            let enemy_on_target = self.other & tgt != 0;
+            let valid_capture = ((tgt & !Self::BOTTOM & !mask) != 0)
+                && ((tgt >> shift) & (self.current | self.other | self.team) == 0);
+
+            if self_on_target || (enemy_on_target && !valid_capture) {
+                continue;
+            }
+
+            if enemy_on_target {
+                let new_others = (self.other & !tgt) | self.team;
+                tgt = tgt >> shift;
+                let new_current = (self.current & !(1 << src)) | tgt;
+                capture = true;
+
+                // Assumption here: we don't care whether this is a king or nah, we also don't care
+                let board = Board::with(new_current, new_others, 0, Player::North);
+                let mut result = board
+                    .options(Player::North)
+                    .into_iter()
+                    .filter(|x| x.capture)
+                    .collect::<Vec<_>>();
+
+                mvs.reserve(result.len());
+                mvs.append(&mut result);
+            }
+
+            let tgt = tgt.trailing_zeros() as u8;
+            mvs.push(Action { src, tgt, capture })
+        }
+
+        mvs
+    }
+
+    /// exclude the pieces already on column A (left column)
+    /// exclude the pieces already on row 8 (top row)
+    /// pieces that are safe to move top-left
+    fn top_left(&self) -> Vec<Action> {
+        self.move_north(Self::LEFT, Self::TOP_LEFT_MV)
     }
 
     /// exclude the pieces already on column H (right column)
     /// exclude the pieces already on row 8 (top row)
     fn top_right(&self) -> Vec<Action> {
-        let mut pcs = (!BitBoard::TOP) & self.current & (!BitBoard::RIGHT);
-        let mut mvs = Vec::with_capacity(pcs.count_ones() as usize);
-
-        while pcs != 0 {
-            let src = pcs.trailing_zeros() as u8;
-            pcs &= pcs - 1;
-
-            let mut tgt = (1 << src) << Self::TOP_RIGHT_MV;
-            let mut capture = false;
-
-            let self_on_target = self.current & tgt != 0;
-            let enemy_on_target = self.other & tgt != 0;
-            let valid_capture = ((tgt & !Self::TOP & !Self::RIGHT) != 0)
-                && ((tgt << Self::TOP_RIGHT_MV) & (self.current | self.other | self.team) == 0);
-
-            if self_on_target || (enemy_on_target && !valid_capture) {
-                continue;
-            }
-
-            if enemy_on_target {
-                tgt = tgt << Self::TOP_RIGHT_MV;
-                capture = true;
-            }
-
-            let tgt = tgt.trailing_zeros() as u8;
-            mvs.push(Action { src, tgt, capture });
-        }
-
-        mvs
+        self.move_north(Self::RIGHT, Self::TOP_RIGHT_MV)
     }
 
     fn bottom_right(&self) -> Vec<Action> {
-        let mut src = (!BitBoard::BOTTOM) & self.current & (!BitBoard::RIGHT);
-        let mut mvs = Vec::with_capacity(src.count_ones() as usize);
+        self.move_south(Self::RIGHT, Self::BOTTOM_RIGHT_MV)
+    }
 
-        while src != 0 {
-            let from = src.trailing_zeros() as u8;
-            src &= src - 1;
-
-            let mut to = (1 << from) >> Self::BOTTOM_RIGHT_MV;
-            let mut capture = false;
-
-            // there's a current problem with my appraoch, assuming the king only when trying to access its other
-            // movements without providing it's team mates means we possibly make silly assumptions that the landing
-            // spot for the king after a possible capture doesn't include a teammate which is NOT OKAY AND WRONG!!!
-
-            let self_on_target = self.current & to != 0;
-            let enemy_on_target = self.other & to != 0;
-            let valid_capture = ((to & !Self::BOTTOM & !Self::RIGHT) != 0)
-                && ((to >> Self::BOTTOM_RIGHT_MV) & (self.current | self.other | self.team) == 0);
-
-            // println!(
-            //     "this is bottom right self on target>> {self_on_target}, enemy on target: {enemy_on_target}"
-            // );
-
-            // let xxxo = (to >> Self::BOTTOM_RIGHT_MV) & (self.current | self.other);
-            // println!("the xx0 {}", xxxo);
-
-            // let b = Board::with(0, to >> Self::BOTTOM_RIGHT_MV, 0, Player::South);
-            // let bb = Board::with(0, self.current, 0, Player::South);
-            // println!("\n {}", b);
-            // println!("\n {}", bb);
-            // println!("XXXX");
-
-            if self_on_target || (enemy_on_target && !valid_capture) {
-                continue;
-            }
-
-            if enemy_on_target {
-                to = to >> Self::BOTTOM_RIGHT_MV;
-                capture = true;
-            }
-
-            let tgt = to.trailing_zeros() as u8;
-            let src = from;
-            mvs.push(Action { src, tgt, capture })
-        }
-
-        mvs
+    /// exclude the pieces already on column A (left column)
+    /// exclude the pieces already on row 1 (bottom row)
+    pub(crate) fn bottom_left(&self) -> Vec<Action> {
+        self.move_south(Self::LEFT, Self::BOTTOM_LEFT_MV)
     }
 
     pub(crate) fn moves(&self, direction: Player) -> Vec<Action> {
@@ -156,43 +149,6 @@ impl BitBoard {
             other,
             team,
         }
-    }
-
-    /// exclude the pieces already on column A (left column)
-    /// exclude the pieces already on row 1 (bottom row)
-    pub(crate) fn bottom_left(&self) -> Vec<Action> {
-        let mut src = ((!BitBoard::LEFT) & self.current) & (!BitBoard::BOTTOM);
-        let mut moves = Vec::with_capacity(src.count_ones() as usize); // (from, to)
-
-        while src != 0 {
-            let from = src.trailing_zeros() as u8;
-            src &= src - 1;
-
-            let mut to = (1 << from) >> Self::BOTTOM_LEFT_MV;
-            let mut capture = false;
-
-            let self_on_target = self.current & to != 0;
-            let enemy_on_target = self.other & to != 0;
-            let valid_capture = ((to & !Self::LEFT & !Self::BOTTOM) != 0)
-                && ((to >> Self::BOTTOM_LEFT_MV) & (self.current | self.other | self.team) == 0);
-
-            if self_on_target || (enemy_on_target && !valid_capture) {
-                continue;
-            }
-
-            if enemy_on_target {
-                to = to >> Self::BOTTOM_LEFT_MV;
-                capture = true;
-            }
-
-            moves.push(Action {
-                src: from,
-                tgt: to.trailing_zeros() as u8,
-                capture,
-            });
-        }
-
-        moves
     }
 }
 
@@ -249,4 +205,24 @@ mod tests {
             .iter()
             .for_each(|mv| assert!(received.contains(&Action::from(*mv))));
     }
+
+    // should return all mulitple moves (for a single piece) in one go for a regular player test (bottom-left -->> bottom-right)
+    // same as above, but testing for kings
+    // #[test]
+    // fn should_return_all_possible_moves_in_the_start_position() {
+    //     let south = 0x200008000001u64;
+    //     let north = 0x40000000000000u64;
+
+    //     let kings = 1 << 42;
+
+    //     let board = Board::with(north, south, kings, Player::North);
+    //     let received = board.options(Player::North);
+
+    //     let expected = [(56, 49, false), (58, 49, false), (58, 51, false)];
+
+    //     println!("the board here is ****** \n {board}");
+    //     assert!(false);
+    // }
+
+    // should_return_all_possible_moves_in_the_start_position
 }
