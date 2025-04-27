@@ -38,6 +38,7 @@ impl BitBoard {
 
             let mut tgt = (1 << src).shift_by(shift, turn);
             let mut capture = false;
+            let mut promoted = false;
 
             let self_on_target = self.current & tgt != 0;
             let enemy_on_target = self.other & tgt != 0;
@@ -50,45 +51,36 @@ impl BitBoard {
 
             if enemy_on_target {
                 let new_others = self.other & !tgt;
-                // println!("original tgt is************** {}", tgt.trailing_zeros());
                 tgt = tgt.shift_by(shift, turn);
-                // println!("THE NEW TARGET IS ++++++++++++++  {}", tgt.trailing_zeros());
 
-                let new_current = (self.current & !(1 << src)) | tgt | self.team;
-                capture = true;
-
-                // if this current pirce is a king, we need to be able to continue with that process here
-
-                let board = match turn {
-                    Player::North => Board::with(new_current, new_others, 0, turn),
-                    Player::South => Board::with(new_others, new_current, 0, turn),
+                promoted = match turn {
+                    Player::South => (tgt.trailing_zeros() / 8) == 7,
+                    Player::North => (tgt.trailing_zeros() / 8) == 0,
                 };
 
-                // println!("the board after {board}");
+                let new_current = (self.current & !(1 << src)) | self.team | tgt;
+                capture = true;
+
+                let kings = (promoted as u64) * tgt;
+
+                // if this current pirce is a king, we need to be able to continue with that process here
+                let board = match turn {
+                    Player::North => Board::with(new_current, new_others, kings, turn),
+                    Player::South => Board::with(new_others, new_current, kings, turn),
+                };
+
                 let result = board.options(turn);
-
-                // println!("the target here is>>>>>>>> {}", tgt.trailing_zeros());
-                // println!("did we get anyyyy [[[[[[---]]]]]]] \n {:?} \n", result);
-
-                let mut result = result
-                    .into_iter()
-                    .filter(
-                        |x| x.capture, // && tgt.trailing_zeros() as u8 == x.tgt
-                    )
-                    .collect::<Vec<_>>();
-
-                // println!("did we get anyyyy result??????????? \n {:?}", result);
+                let mut result = result.into_iter().filter(|x| x.capture).collect::<Vec<_>>();
 
                 mvs.reserve(result.len());
                 mvs.append(&mut result);
             }
 
             let tgt = tgt.trailing_zeros() as u8;
-
-            let promoted = match turn {
-                Player::South => (tgt / 8) == 7,
-                Player::North => (tgt / 8) == 0,
-            };
+            // promoted = match turn {
+            //     Player::South => (tgt / 8) == 7,
+            //     Player::North => (tgt / 8) == 0,
+            // };
 
             mvs.push(Action {
                 src,
@@ -244,9 +236,44 @@ mod tests {
     #[test]
     fn should_return_all_possible_moves_in_the_base_position() {
         let board = Board::new();
-        let received = board.options(Player::North);
+        let received = board.options(Player::South);
         assert_eq!(received.len(), 7);
         assert_eq!(board.options(Player::South).len(), 7);
+
+        let expected = [
+            (16, 25, false, false),
+            (18, 25, false, false),
+            (18, 27, false, false),
+            (20, 27, false, false),
+            (20, 29, false, false),
+            (22, 29, false, false),
+            (22, 31, false, false),
+        ];
+
+        assert_eq!(received.len(), expected.len());
+        expected
+            .iter()
+            .for_each(|mv| assert!(received.contains(&Action::from(*mv))));
     }
+
     // should convert a regular to a king after they reach the opponents base
+    #[test]
+    fn should_convert_a_regular_to_king_if_they_touch_the_opponents_base() {
+        let south = 0x20000000000u64;
+        let north = 0x14000008000000u64;
+
+        let board = Board::with(north, south, 0, Player::South);
+        let received = board.options(Player::South);
+
+        let expected = [
+            (41u8, 59u8, true, true),
+            (41, 48, false, false),
+            (59, 45, true, false),
+        ];
+
+        assert_eq!(received.len(), expected.len());
+        expected
+            .iter()
+            .for_each(|mv| assert!(received.contains(&Action::from(*mv))));
+    }
 }

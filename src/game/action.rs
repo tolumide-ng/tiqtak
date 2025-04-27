@@ -40,7 +40,7 @@ impl MctsAction for Action {}
 
 impl Display for Action {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let cols = ('A'..'H').into_iter().collect::<Vec<_>>();
+        let cols = ('A'..='H').into_iter().collect::<Vec<_>>();
         let src_col = (self.src % 8) as usize;
         let src_row = (self.src / 8) + 1;
         let tgt_col = (self.tgt % 8) as usize;
@@ -48,8 +48,8 @@ impl Display for Action {
 
         write!(
             f,
-            "{{src: {:?}{}, tgt: {:?}{}}}",
-            src_row, cols[src_col], tgt_row, cols[tgt_col]
+            "{{src: {:?}{}, tgt: {:?}{}, capture: {:?}, promoted: {:?}}}",
+            src_row, cols[src_col], tgt_row, cols[tgt_col], self.capture, self.promoted
         )?;
 
         Ok(())

@@ -1,4 +1,4 @@
-use game::{board::Board, utils::Player};
+use game::{board::checkers::Board, utils::Player};
 use mcts::{
     algo::{state::State, tree_search::MCTS},
     utils::{limit::Limit, reward::Reward, skill_level::SkillLevel, strength::Strength},
