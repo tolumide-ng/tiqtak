@@ -1,3 +1,4 @@
+use crate::game::u64_shift::U64Ext;
 use crate::{Board, game::utils::Player};
 
 use super::action::Action;
@@ -20,7 +21,7 @@ impl BitBoard {
     const BOTTOM_RIGHT_MV: u8 = 7;
 
     // hor_mask: horizontal mask
-    fn move_north(&self, hor_mask: u64, shift: u8, turn: Player) -> Vec<Action> {
+    fn get(&self, hor_mask: u64, shift: u8, turn: Player) -> Vec<Action> {
         // vertical mask
         let v_mask = match turn {
             Player::South => Self::TOP,
@@ -35,13 +36,13 @@ impl BitBoard {
             let src = pcs.trailing_zeros() as u8;
             pcs &= pcs - 1;
 
-            let mut tgt = (1 << src) << shift;
+            let mut tgt = (1 << src).shift_by(shift, turn);
             let mut capture = false;
 
             let self_on_target = self.current & tgt != 0;
             let enemy_on_target = self.other & tgt != 0;
             let valid_capture = ((tgt & !v_mask & !hor_mask) != 0)
-                && ((tgt << shift) & (self.current | self.other | self.team) == 0);
+                && ((tgt.shift_by(shift, turn)) & (self.current | self.other | self.team) == 0);
 
             if self_on_target || (enemy_on_target && !valid_capture) {
                 continue;
@@ -49,7 +50,7 @@ impl BitBoard {
 
             if enemy_on_target {
                 let new_others = self.other & !tgt;
-                tgt = tgt << shift;
+                tgt = tgt.shift_by(shift, turn);
                 let new_current = (self.current & !(1 << src)) | tgt | self.team;
                 capture = true;
 
@@ -71,77 +72,27 @@ impl BitBoard {
         mvs
     }
 
-    fn move_south(&self, hor_mask: u64, shift: u8, turn: Player) -> Vec<Action> {
-        let v_mask = match turn {
-            Player::South => Self::TOP,
-            Player::North => Self::BOTTOM,
-        };
-
-        let mut pcs = (!v_mask) & self.current & !hor_mask;
-        let mut mvs = Vec::with_capacity(pcs.count_ones() as usize);
-
-        while pcs != 0 {
-            let src = pcs.trailing_zeros() as u8;
-            pcs &= pcs - 1;
-
-            let mut tgt = (1 << src) >> shift;
-            let mut capture = false;
-
-            let self_on_target = self.current & tgt != 0;
-            let enemy_on_target = self.other & tgt != 0;
-            let valid_capture = ((tgt & !v_mask & !hor_mask) != 0)
-                && ((tgt >> shift) & (self.current | self.other | self.team) == 0);
-
-            if self_on_target || (enemy_on_target && !valid_capture) {
-                continue;
-            }
-
-            if enemy_on_target {
-                let new_others = self.other & !tgt;
-                tgt = tgt >> shift;
-                let new_current = (self.current & !(1 << src)) | tgt | self.team;
-                capture = true;
-
-                // Assumption here: we don't care whether this is a king or nah, we also don't care
-                let board = Board::with(new_current, new_others, 0, turn);
-                let mut result = board
-                    .options(turn)
-                    .into_iter()
-                    .filter(|x| x.capture && tgt.trailing_zeros() as u8 == x.tgt)
-                    .collect::<Vec<_>>();
-
-                mvs.reserve(result.len());
-                mvs.append(&mut result);
-            }
-
-            let tgt = tgt.trailing_zeros() as u8;
-            mvs.push(Action { src, tgt, capture })
-        }
-
-        mvs
-    }
-
     /// exclude the pieces already on column A (left column)
     /// exclude the pieces already on row 8 (top row)
     /// pieces that are safe to move top-left
     fn top_left(&self) -> Vec<Action> {
-        self.move_north(Self::LEFT, Self::TOP_LEFT_MV, Player::South)
+        self.get(Self::LEFT, Self::TOP_LEFT_MV, Player::South)
     }
 
     /// exclude the pieces already on column H (right column)
     /// exclude the pieces already on row 8 (top row)
     fn top_right(&self) -> Vec<Action> {
-        self.move_north(Self::RIGHT, Self::TOP_RIGHT_MV, Player::South)
+        self.get(Self::RIGHT, Self::TOP_RIGHT_MV, Player::South)
     }
 
     fn bottom_right(&self) -> Vec<Action> {
-        self.move_south(Self::RIGHT, Self::BOTTOM_RIGHT_MV, Player::North)
+        self.get(Self::RIGHT, Self::BOTTOM_RIGHT_MV, Player::North)
     }
 
     /// exclude the pieces already on column A (left column)
     /// exclude the pieces already on row 1 (bottom row)
     pub(crate) fn bottom_left(&self) -> Vec<Action> {
-        self.move_south(Self::LEFT, Self::BOTTOM_LEFT_MV, Player::North)
+        self.get(Self::LEFT, Self::BOTTOM_LEFT_MV, Player::North)
     }
 
     pub(crate) fn moves(&self, direction: Player) -> Vec<Action> {
