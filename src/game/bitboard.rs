@@ -85,16 +85,16 @@ impl BitBoard {
 
             let tgt = tgt.trailing_zeros() as u8;
 
-            // let promoted = match turn {
-            //     Player::South => (tgt / 8) == 7,
-            //     Player::North => (tgt / 8) == 0,
-            // };
+            let promoted = match turn {
+                Player::South => (tgt / 8) == 7,
+                Player::North => (tgt / 8) == 0,
+            };
 
             mvs.push(Action {
                 src,
                 tgt,
                 capture,
-                promoted: false,
+                promoted,
             });
         }
 
@@ -172,13 +172,13 @@ mod tests {
         let received = board.options(Player::South);
 
         let expected = [
-            (21u8, 30u8, false),
-            (28u8, 37u8, false),
-            (26u8, 40u8, true),
-            (26u8, 44u8, true),
-            (44u8, 62u8, true),
-            (42u8, 49u8, false),
-            (42u8, 51u8, false),
+            (21u8, 30u8, false, false),
+            (28u8, 37u8, false, false),
+            (26u8, 40u8, true, false),
+            (26u8, 44u8, true, false),
+            (44u8, 62u8, true, true),
+            (42u8, 49u8, false, false),
+            (42u8, 51u8, false, false),
         ];
 
         assert_eq!(received.len(), expected.len());
@@ -198,14 +198,14 @@ mod tests {
         let received = board.options(Player::South);
 
         let expected = [
-            (26u8, 40u8, true),
-            (26, 44, true),
-            (28, 37, false),
-            (21, 30, false),
-            (42, 24, true),
-            (42, 49, false),
-            (42, 51, false),
-            (44, 62, true),
+            (26u8, 40u8, true, false),
+            (26, 44, true, false),
+            (28, 37, false, false),
+            (21, 30, false, false),
+            (42, 24, true, false),
+            (42, 49, false, false),
+            (42, 51, false, false),
+            (44, 62, true, true),
         ];
 
         assert_eq!(received.len(), expected.len());
@@ -228,10 +228,10 @@ mod tests {
         let received = board.options(Player::North);
 
         let expected = [
-            (54u8, 36u8, true),
-            (54u8, 47u8, false),
-            (36, 18, true),
-            (18, 4, true),
+            (54u8, 36u8, true, false),
+            (54u8, 47u8, false, false),
+            (36, 18, true, false),
+            (18, 4, true, true),
         ];
 
         assert_eq!(received.len(), expected.len());

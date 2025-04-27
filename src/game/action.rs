@@ -10,13 +10,13 @@ pub(crate) struct Action {
     pub(crate) promoted: bool,
 }
 
-impl From<(u8, u8, bool)> for Action {
-    fn from((src, tgt, capture): (u8, u8, bool)) -> Self {
+impl From<(u8, u8, bool, bool)> for Action {
+    fn from((src, tgt, capture, promoted): (u8, u8, bool, bool)) -> Self {
         Self {
             src,
             tgt,
             capture,
-            promoted: false,
+            promoted,
         }
     }
 }
@@ -26,12 +26,12 @@ impl Action {
     const SHIFT_TGT: u8 = 2;
     const SHIFT_CP: u8 = 1; // shift_capture
 
-    pub(crate) fn new(src: u8, tgt: u8, capture: bool) -> Self {
+    pub(crate) fn new(src: u8, tgt: u8, capture: bool, promoted: bool) -> Self {
         Self {
             src,
             tgt,
             capture,
-            promoted: false,
+            promoted,
         }
     }
 }
