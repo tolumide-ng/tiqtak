@@ -84,7 +84,18 @@ impl BitBoard {
             }
 
             let tgt = tgt.trailing_zeros() as u8;
-            mvs.push(Action { src, tgt, capture });
+
+            // let promoted = match turn {
+            //     Player::South => (tgt / 8) == 7,
+            //     Player::North => (tgt / 8) == 0,
+            // };
+
+            mvs.push(Action {
+                src,
+                tgt,
+                capture,
+                promoted: false,
+            });
         }
 
         mvs
@@ -229,7 +240,13 @@ mod tests {
             .for_each(|mv| assert!(received.contains(&Action::from(*mv))));
     }
 
-    // should convert a regular to a king after they reach the opponents base
-
     // should_return_all_possible_moves_in_the_start_position
+    #[test]
+    fn should_return_all_possible_moves_in_the_base_position() {
+        let board = Board::new();
+        let received = board.options(Player::North);
+        assert_eq!(received.len(), 7);
+        assert_eq!(board.options(Player::South).len(), 7);
+    }
+    // should convert a regular to a king after they reach the opponents base
 }

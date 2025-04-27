@@ -83,7 +83,10 @@ impl Board {
             .iter()
             .find(|op| op.src == mv.src && op.tgt == mv.tgt);
 
-        let Some(Action { src, tgt, capture }) = valid else {
+        let Some(Action {
+            src, tgt, capture, ..
+        }) = valid
+        else {
             return None;
         };
 
