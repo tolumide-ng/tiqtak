@@ -50,16 +50,34 @@ impl BitBoard {
 
             if enemy_on_target {
                 let new_others = self.other & !tgt;
+                // println!("original tgt is************** {}", tgt.trailing_zeros());
                 tgt = tgt.shift_by(shift, turn);
+                // println!("THE NEW TARGET IS ++++++++++++++  {}", tgt.trailing_zeros());
+
                 let new_current = (self.current & !(1 << src)) | tgt | self.team;
                 capture = true;
 
-                let board = Board::with(new_current, new_others, 0, turn);
-                let mut result = board
-                    .options(turn)
+                // if this current pirce is a king, we need to be able to continue with that process here
+
+                let board = match turn {
+                    Player::North => Board::with(new_current, new_others, 0, turn),
+                    Player::South => Board::with(new_others, new_current, 0, turn),
+                };
+
+                // println!("the board after {board}");
+                let result = board.options(turn);
+
+                // println!("the target here is>>>>>>>> {}", tgt.trailing_zeros());
+                // println!("did we get anyyyy [[[[[[---]]]]]]] \n {:?} \n", result);
+
+                let mut result = result
                     .into_iter()
-                    .filter(|x| x.capture && tgt.trailing_zeros() as u8 == x.tgt)
+                    .filter(
+                        |x| x.capture, // && tgt.trailing_zeros() as u8 == x.tgt
+                    )
                     .collect::<Vec<_>>();
+
+                // println!("did we get anyyyy result??????????? \n {:?}", result);
 
                 mvs.reserve(result.len());
                 mvs.append(&mut result);
@@ -77,22 +95,26 @@ impl BitBoard {
     /// pieces that are safe to move top-left
     fn top_left(&self) -> Vec<Action> {
         self.get(Self::LEFT, Self::TOP_LEFT_MV, Player::South)
+        // vec![]
     }
 
     /// exclude the pieces already on column H (right column)
     /// exclude the pieces already on row 8 (top row)
     fn top_right(&self) -> Vec<Action> {
         self.get(Self::RIGHT, Self::TOP_RIGHT_MV, Player::South)
+        // vec![]
     }
 
     fn bottom_right(&self) -> Vec<Action> {
         self.get(Self::RIGHT, Self::BOTTOM_RIGHT_MV, Player::North)
+        // vec![]
     }
 
     /// exclude the pieces already on column A (left column)
     /// exclude the pieces already on row 1 (bottom row)
     pub(crate) fn bottom_left(&self) -> Vec<Action> {
         self.get(Self::LEFT, Self::BOTTOM_LEFT_MV, Player::North)
+        // vec![]
     }
 
     pub(crate) fn moves(&self, direction: Player) -> Vec<Action> {
@@ -136,11 +158,22 @@ mod tests {
         let south = 0x40014200000u64;
 
         let board = Board::with(north, south, 0, Player::South);
+        let received = board.options(Player::South);
 
-        println!("{board}");
+        let expected = [
+            (21u8, 30u8, false),
+            (28u8, 37u8, false),
+            (26u8, 40u8, true),
+            (26u8, 44u8, true),
+            (44u8, 62u8, true),
+            (42u8, 49u8, false),
+            (42u8, 51u8, false),
+        ];
 
-        let mvs = board.options(Player::South);
-        assert_eq!(mvs.len(), 6);
+        assert_eq!(received.len(), expected.len());
+        expected
+            .iter()
+            .for_each(|x| assert!(received.contains(&Action::from(*x))));
     }
 
     #[test]
@@ -161,6 +194,7 @@ mod tests {
             (42, 24, true),
             (42, 49, false),
             (42, 51, false),
+            (44, 62, true),
         ];
 
         assert_eq!(received.len(), expected.len());
@@ -172,21 +206,30 @@ mod tests {
 
     // should return all mulitple moves (for a single piece) in one go for a regular player test (bottom-left -->> bottom-right)
     // same as above, but testing for kings
-    // #[test]
-    // fn should_return_all_possible_moves_in_the_start_position() {
-    //     let south = 0x200008000001u64;
-    //     let north = 0x40000000000000u64;
+    #[test]
+    fn should_return_all_multiples_moves_by_one_piece() {
+        let south = 0x200008000801u64;
+        let north = 0x40000000000000u64;
 
-    //     let kings = 1 << 42;
+        let kings = 1 << 42;
 
-    //     let board = Board::with(north, south, kings, Player::North);
-    //     let received = board.options(Player::North);
+        let board = Board::with(north, south, kings, Player::North);
+        let received = board.options(Player::North);
 
-    //     let expected = [(56, 49, false), (58, 49, false), (58, 51, false)];
+        let expected = [
+            (54u8, 36u8, true),
+            (54u8, 47u8, false),
+            (36, 18, true),
+            (18, 4, true),
+        ];
 
-    //     println!("the board here is ****** \n {board}");
-    //     assert!(false);
-    // }
+        assert_eq!(received.len(), expected.len());
+        expected
+            .iter()
+            .for_each(|mv| assert!(received.contains(&Action::from(*mv))));
+    }
+
+    // should convert a regular to a king after they reach the opponents base
 
     // should_return_all_possible_moves_in_the_start_position
 }
