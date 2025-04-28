@@ -3,7 +3,11 @@ use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use crate::mcts::{
     traits::{Action, MCTSError, Player},
-    utils::{limit::Limit, rand::getrand, skill_level::SkillLevel},
+    utils::{
+        limit::Limit,
+        rand::{genrand, getrand},
+        skill_level::SkillLevel,
+    },
 };
 
 use super::{node::Node, state::State};
@@ -58,7 +62,7 @@ where
             return actions[0];
         }
 
-        let index = getrand(actions.len()).unwrap();
+        let index = genrand(0, actions.len());
 
         actions[index]
     }
@@ -72,8 +76,7 @@ where
         let loss_penalty = self.level.loss_penalty();
 
         while !current_node.as_ref().borrow().is_terminal() {
-            // println!("HOW MANY CURRENT NODES ARE THERE !!!!!!!");
-            let action = self.choose(current_node.as_ref().borrow().get_actions());
+            let action = self.choose(current_node.borrow().get_actions());
 
             let (next_state, next_player) = current_node.as_ref().borrow().execute(&action);
 
@@ -117,10 +120,7 @@ where
                     let selected_node = node.as_ref().borrow_mut().select(constant);
                     if !selected_node.as_ref().borrow().is_terminal() {
                         let child = selected_node.as_ref().borrow_mut().expand();
-                        // println!("all the children >>>>>> {:?}", child);
-                        println!("BEFORE SIMULATION********");
                         let rewards = self.simulate(child);
-                        println!("done simulating>>>>>>>");
                         selected_node.as_ref().borrow_mut().back_propagate(rewards);
                     }
                 }
@@ -151,7 +151,7 @@ where
             }
         }
 
-        let index = getrand(best_children.len()).unwrap();
+        let index = genrand(0, best_children.len());
         let child = &best_children[index];
 
         child.borrow().get_action().unwrap()
@@ -186,9 +186,9 @@ where
         let mut child = None;
 
         if winning_moves.len() > 0 {
-            child = Some(&winning_moves[getrand(winning_moves.len()).unwrap()]);
+            child = Some(&winning_moves[genrand(0, winning_moves.len())]);
         } else {
-            child = Some(&best_children[getrand(best_children.len()).unwrap()]);
+            child = Some(&best_children[genrand(0, best_children.len())]);
         }
 
         child.unwrap().borrow().get_action().unwrap()

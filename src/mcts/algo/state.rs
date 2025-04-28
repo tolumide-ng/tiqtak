@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
 use crate::mcts::{
     traits::{Action, MCTSError, Player},
@@ -6,7 +6,7 @@ use crate::mcts::{
 };
 
 /// Priority based on Move importance: Prioritize expansion of nodes corresponding to moves that are
-pub(crate) trait State<A, P, E>: Clone + Debug
+pub(crate) trait State<A, P, E>: Clone + Debug + Display
 where
     A: Action,
     P: Player,

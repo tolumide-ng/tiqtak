@@ -1,4 +1,4 @@
-use std::{fmt::Display, ops::Index};
+use std::{collections::HashSet, fmt::Display, ops::Index};
 
 use crate::game::{action::Action, bitboard::BitBoard, utils::Player};
 
@@ -74,11 +74,13 @@ impl Board {
 
         let opponent = self[!turn];
         let mut natural_mvs = BitBoard::from((regulars | kings, opponent, 0)).moves(turn);
-        let mut king_mvs = BitBoard::from((kings, opponent, regulars)).moves(!turn); // extra king moves
+        let king_mvs = BitBoard::from((kings, opponent, regulars)).moves(!turn); // extra king moves
 
-        natural_mvs.reserve(king_mvs.len());
-        natural_mvs.append(&mut king_mvs);
-        natural_mvs
+        // natural_mvs.reserve(king_mvs.len());
+        // natural_mvs.append(&mut king_mvs);
+        natural_mvs = &natural_mvs | &king_mvs;
+
+        natural_mvs.into_iter().collect()
     }
 
     pub(crate) fn play(&mut self, mv: Action) -> Option<Self> {
@@ -102,7 +104,7 @@ impl Board {
                 let is_king = (BitBoard::BOTTOM & (1 << tgt)) != 0;
                 let kings = self.kings | ((is_king as u64) << tgt);
 
-                let cp = (!mv.capture) as u8;
+                let cp = !(mv.capture) as u8;
                 let qmvs = ((self.qmvs.0 + 1) * cp, self.qmvs.1 * cp);
 
                 (north, south, kings, qmvs)
@@ -132,8 +134,7 @@ impl Board {
         self.south = south;
         self.kings = kings;
         self.turn = !self.turn;
-        self.qmvs.0 += (mv.capture && self.turn == Player::North) as u8;
-        self.qmvs.1 += (mv.capture && self.turn == Player::South) as u8;
+        self.qmvs = qmvs;
         // self = Self {
         //     north,
         //     south,
@@ -192,6 +193,7 @@ impl Display for Board {
         writeln!(f, "---------------------------------------------------")?;
 
         writeln!(f, "Turn: {:?}", self.turn)?;
+        write!(f, "Quiet moves: {:?}", self.qmvs)?;
         writeln!(f, "checkers board")?;
 
         Ok(())

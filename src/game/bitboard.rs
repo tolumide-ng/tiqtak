@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::game::u64_shift::U64Ext;
 use crate::{Board, game::utils::Player};
 
@@ -21,7 +23,7 @@ impl BitBoard {
     const BOTTOM_RIGHT_MV: u8 = 7;
 
     // hor_mask: horizontal mask
-    fn get(&self, hor_mask: u64, shift: u8, turn: Player) -> Vec<Action> {
+    fn get(&self, hor_mask: u64, shift: u8, turn: Player) -> HashSet<Action> {
         // vertical mask
         let v_mask = match turn {
             Player::South => Self::TOP,
@@ -30,7 +32,7 @@ impl BitBoard {
 
         // South
         let mut pcs = (!v_mask) & self.current & !hor_mask;
-        let mut mvs = Vec::with_capacity(pcs.count_ones() as usize);
+        let mut mvs = HashSet::with_capacity(pcs.count_ones() as usize);
 
         while pcs != 0 {
             let src = pcs.trailing_zeros() as u8;
@@ -70,10 +72,9 @@ impl BitBoard {
                 };
 
                 let result = board.options(turn);
-                let mut result = result.into_iter().filter(|x| x.capture).collect::<Vec<_>>();
+                let result = result.into_iter().filter(|x| x.capture).collect();
 
-                mvs.reserve(result.len());
-                mvs.append(&mut result);
+                mvs = &mvs | &result // combines both (hashset automatically helps us remove duplicates)
             }
 
             let tgt = tgt.trailing_zeros() as u8;
@@ -82,7 +83,7 @@ impl BitBoard {
             //     Player::North => (tgt / 8) == 0,
             // };
 
-            mvs.push(Action {
+            mvs.insert(Action {
                 src,
                 tgt,
                 capture,
@@ -96,38 +97,37 @@ impl BitBoard {
     /// exclude the pieces already on column A (left column)
     /// exclude the pieces already on row 8 (top row)
     /// pieces that are safe to move top-left
-    fn top_left(&self) -> Vec<Action> {
+    fn top_left(&self) -> HashSet<Action> {
         self.get(Self::LEFT, Self::TOP_LEFT_MV, Player::South)
-        // vec![]
     }
 
     /// exclude the pieces already on column H (right column)
     /// exclude the pieces already on row 8 (top row)
-    fn top_right(&self) -> Vec<Action> {
+    fn top_right(&self) -> HashSet<Action> {
         self.get(Self::RIGHT, Self::TOP_RIGHT_MV, Player::South)
-        // vec![]
     }
 
-    fn bottom_right(&self) -> Vec<Action> {
+    fn bottom_right(&self) -> HashSet<Action> {
         self.get(Self::RIGHT, Self::BOTTOM_RIGHT_MV, Player::North)
-        // vec![]
     }
 
     /// exclude the pieces already on column A (left column)
     /// exclude the pieces already on row 1 (bottom row)
-    pub(crate) fn bottom_left(&self) -> Vec<Action> {
+    pub(crate) fn bottom_left(&self) -> HashSet<Action> {
         self.get(Self::LEFT, Self::BOTTOM_LEFT_MV, Player::North)
         // vec![]
     }
 
-    pub(crate) fn moves(&self, direction: Player) -> Vec<Action> {
+    pub(crate) fn moves(&self, direction: Player) -> HashSet<Action> {
         let (mut left, mut right) = match direction {
             Player::South => (self.top_left(), self.top_right()),
             Player::North => (self.bottom_left(), self.bottom_right()),
         };
 
-        left.reserve(right.len());
-        left.append(&mut right);
+        // left.reserve(right.len());
+        // left.append(&mut right);
+
+        left = &left | &right;
 
         left
     }
@@ -276,4 +276,27 @@ mod tests {
             .iter()
             .for_each(|mv| assert!(received.contains(&Action::from(*mv))));
     }
+
+    #[test]
+    fn should_make_only_valid_moves() {
+        let north = 0x8040200000000000u64;
+        let south = 0x1028000000u64;
+
+        let board = Board::with(north, south, 0, Player::North, (0, 0));
+        println!("{board}");
+
+        let received = board.options(Player::North);
+
+        let expected = [(54u8, 47u8, false, false), (45u8, 38u8, false, false)];
+
+        received
+            .iter()
+            .for_each(|x| println!("the value is ----->>>>> {}", x.to_string()));
+
+        assert_eq!(received.len(), expected.len());
+
+        // assert!(false);
+    }
+
+    //  test that quiet moves is also increased when there is no capture
 }

@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::mcts::{
     traits::{Action, MCTSError, Player},
-    utils::rand::getrand,
+    utils::rand::{genrand, getrand},
 };
 
 use super::{node::Node, state::State};
@@ -46,7 +46,7 @@ pub(crate) trait MultiArmedBandit {
             }
         }
 
-        let index = getrand(max_actions.len()).unwrap();
+        let index = genrand(0, max_actions.len());
         Rc::clone(&max_actions[index])
     }
 }

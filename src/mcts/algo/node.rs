@@ -5,7 +5,10 @@ use std::{
 
 use crate::mcts::{
     traits::{Action, MCTSError, Player},
-    utils::{rand::getrand, reward::Reward},
+    utils::{
+        rand::{genrand, getrand},
+        reward::Reward,
+    },
 };
 
 use super::{bandit::MultiArmedBandit, state::State};
@@ -136,6 +139,15 @@ where
             .filter_map(|c| c.as_ref().borrow().action)
             .collect::<Vec<_>>();
 
+        // println!(
+        //     "the total obtained actions here is >>>>>|||||||| {}, and the expanded_children are ------>>>> ((((((({})))))",
+        //     actions.len(),
+        //     expanded_children.len()
+        // );
+        // println!(
+        //     "the expanded children are {:?}, \n\n actions are: {:?}",
+        //     expanded_children, actions
+        // );
         return actions
             .into_iter()
             .filter(|a| !expanded_children.contains(a))
@@ -167,16 +179,25 @@ where
     pub fn expand(&mut self) -> Rc<RefCell<Node<S, A, P, E>>> {
         let game_ended = self.children.len() == self.state.get_actions().len();
 
+        let actions = self.get_unexpanded_actions();
+
+        // println!(
+        //     "\n\nthe total children is >>>> {}, and the total actions is {}, the unexpanded action len is {} \n\n\n\n",
+        //     self.children.len(),
+        //     self.state.get_actions().len(),
+        //     actions.len()
+        // );
+
         // println!("the children here are ***** {game_ended}");
 
         if !game_ended {
-            let actions = self.get_unexpanded_actions();
+            // let actions = self.get_unexpanded_actions();
 
-            actions.iter().for_each(|x| println!("{:?}", x.to_string()));
+            // actions.iter().for_each(|x| println!("{:?}", x.to_string()));
 
             // println!("the unexpanded actions are ????? {:?}", actions);
 
-            let index = getrand(actions.len()).unwrap();
+            let index = genrand(0, actions.len());
             let action = &actions[index];
 
             let child = self.get_outcome_child(*action);
