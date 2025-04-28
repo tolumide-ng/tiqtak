@@ -307,10 +307,10 @@ mod tests {
             (9, 0, false, true),
         ];
 
-        received.iter().for_each(|x| {
-            println!("{:?}", x);
-            println!("the value is ----->>>>> {} \n", x.to_string())
-        });
+        // received.iter().for_each(|x| {
+        //     println!("{:?}", x);
+        //     println!("the value is ----->>>>> {} \n", x.to_string())
+        // });
 
         expected
             .iter()
@@ -334,7 +334,8 @@ mod tests {
         assert_eq!(board.north.count_ones(), 3);
         assert_eq!((board.north & (!board.kings)).count_ones(), 1);
         assert_eq!((board.north & board.kings).count_ones(), 2);
-        assert!((board.kings & 1 << 2) != 0);
+        assert!((board.kings & (1 << 2)) != 0);
+        assert!((board.kings & (1 << 11)) == 0);
 
         let action = Action::from((2, 11, false, false));
 
@@ -344,13 +345,9 @@ mod tests {
         assert_eq!(new_board.kings.count_ones(), 6);
         assert_eq!((new_board.south & board.kings).count_ones(), 4);
         assert_eq!(new_board.north.count_ones(), 3);
-        assert!((new_board.kings & 1 << 2) != 0);
+        assert!((new_board.kings & (1 << 2)) == 0);
+        assert!((new_board.kings & (1 << 11)) != 0);
         assert_eq!((new_board.north & (!new_board.kings)).count_ones(), 1);
         assert_eq!((new_board.north & new_board.kings).count_ones(), 2);
     }
-
-    // a king should never be demoted when leaving the opponent's base/ under any other circumstance
-    //  test that quiet moves is also increased when there is no capture
-
-    // wbhy are the kings disappearing???????
 }
