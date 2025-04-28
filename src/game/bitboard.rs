@@ -55,10 +55,7 @@ impl BitBoard {
                 let new_others = self.other & !tgt;
                 tgt = tgt.shift_by(shift, turn);
 
-                promoted = match turn {
-                    Player::South => (tgt.trailing_zeros() / 8) == 7,
-                    Player::North => (tgt.trailing_zeros() / 8) == 0,
-                };
+                promoted = (tgt.trailing_zeros() / 8) == ((turn as u32) * 7);
 
                 let new_current = (self.current & !(1 << src)) | self.team | tgt;
                 capture = true;
@@ -78,11 +75,8 @@ impl BitBoard {
             }
 
             let tgt = tgt.trailing_zeros() as u8;
-            // promoted = match turn {
-            //     Player::South => (tgt / 8) == 7,
-            //     Player::North => (tgt / 8) == 0,
-            // };
 
+            promoted = (tgt / 8) == ((turn as u8) * 7);
             mvs.insert(Action {
                 src,
                 tgt,
@@ -319,9 +313,11 @@ mod tests {
             println!("the value is ----->>>>> {} \n", x.to_string())
         });
 
-        assert_eq!(expected.len(), received.len());
+        expected
+            .iter()
+            .for_each(|x| assert!(received.contains(&Action::from(*x))));
 
-        assert!(false);
+        assert_eq!(expected.len(), received.len());
     }
 
     // a king should never be demoted when leaving the opponent's base/ under any other circumstance
