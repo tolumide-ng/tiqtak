@@ -123,18 +123,18 @@ impl Board {
             }
         };
 
-        // return Some(Self {
-        //     north,
-        //     south,
-        //     kings,
-        //     turn: !self.turn,
-        //      qmvs: ()
-        // });
-        self.north = north;
-        self.south = south;
-        self.kings = kings;
-        self.turn = !self.turn;
-        self.qmvs = qmvs;
+        return Some(Self {
+            north,
+            south,
+            kings,
+            turn: !self.turn,
+            qmvs,
+        });
+        // self.north = north;
+        // self.south = south;
+        // self.kings = kings;
+        // self.turn = !self.turn;
+        // self.qmvs = qmvs;
         // self = Self {
         //     north,
         //     south,

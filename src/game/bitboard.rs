@@ -51,6 +51,11 @@ impl BitBoard {
                 continue;
             }
 
+            if src == 2 && tgt.trailing_zeros() == 9 {
+                println!("the value of self on target is >>>> {}", self_on_target);
+                println!("this is me and me \n\n");
+            }
+
             if enemy_on_target {
                 let new_others = self.other & !tgt;
                 tgt = tgt.shift_by(shift, turn);
@@ -289,14 +294,43 @@ mod tests {
 
         let expected = [(54u8, 47u8, false, false), (45u8, 38u8, false, false)];
 
-        received
+        expected
             .iter()
-            .for_each(|x| println!("the value is ----->>>>> {}", x.to_string()));
+            .for_each(|x| assert!(received.contains(&Action::from(*x))));
 
         assert_eq!(received.len(), expected.len());
-
-        // assert!(false);
     }
 
+    #[test]
+    fn a_king_should_never_overwrite_its_teammates() {
+        let north = 0x244u64;
+        let south = 0xaa00000000000000u64;
+
+        let kings = 1 << 2 | 1 << 6; // 0x44u64
+
+        let board = Board::with(north, south, kings, Player::North, (0, 0));
+        println!("{board}");
+        let received = board.options(Player::North);
+
+        let expected = [
+            (6, 15, false, false),
+            (6, 13, false, false),
+            (2, 11, false, false),
+            (9, 0, false, true),
+        ];
+
+        received.iter().for_each(|x| {
+            println!("{:?}", x);
+            println!("the value is ----->>>>> {} \n", x.to_string())
+        });
+
+        assert_eq!(expected.len(), received.len());
+
+        assert!(false);
+    }
+
+    // a king should never be demoted when leaving the opponent's base/ under any other circumstance
     //  test that quiet moves is also increased when there is no capture
+
+    // wbhy are the kings disappearing???????
 }

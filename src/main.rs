@@ -25,10 +25,9 @@ fn main() {
         while board.get_reward() == Reward::Continue {
             let mut mcts = MCTS::new(board, board.turn, players.clone(), skills);
 
-            println!("before run");
-
             let mv = mcts.run();
 
+            println!("playing {}", mv.to_string());
             board = board.play(mv).unwrap();
 
             println!("{board}");
