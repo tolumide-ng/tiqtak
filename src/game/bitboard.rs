@@ -295,10 +295,9 @@ mod tests {
         let north = 0x244u64;
         let south = 0xaa00000000000000u64;
 
-        let kings = 1 << 2 | 1 << 6; // 0x44u64
+        let kings = 1 << 2 | 1 << 6 | 1 << 57 | 1 << 59 | 1 << 61 | 1 << 63;
 
         let board = Board::with(north, south, kings, Player::North, (0, 0));
-        println!("{board}");
         let received = board.options(Player::North);
 
         let expected = [
@@ -318,6 +317,36 @@ mod tests {
             .for_each(|x| assert!(received.contains(&Action::from(*x))));
 
         assert_eq!(expected.len(), received.len());
+    }
+
+    #[test]
+    fn king_piece_should_never_be_demoted_when_it_leaves_the_opponents_base() {
+        let north = 0x244u64;
+        let south = 0xaa00000000000000u64;
+
+        let kings = 1 << 2 | 1 << 6 | 1 << 57 | 1 << 59 | 1 << 61 | 1 << 63;
+
+        let board = Board::with(north, south, kings, Player::North, (0, 0));
+        println!("{board}");
+
+        assert_eq!(board.kings.count_ones(), 6);
+        assert_eq!((board.south & board.kings).count_ones(), 4);
+        assert_eq!(board.north.count_ones(), 3);
+        assert_eq!((board.north & (!board.kings)).count_ones(), 1);
+        assert_eq!((board.north & board.kings).count_ones(), 2);
+        assert!((board.kings & 1 << 2) != 0);
+
+        let action = Action::from((2, 11, false, false));
+
+        let new_board = board.play(action).unwrap();
+        println!("{new_board}");
+
+        assert_eq!(new_board.kings.count_ones(), 6);
+        assert_eq!((new_board.south & board.kings).count_ones(), 4);
+        assert_eq!(new_board.north.count_ones(), 3);
+        assert!((new_board.kings & 1 << 2) != 0);
+        assert_eq!((new_board.north & (!new_board.kings)).count_ones(), 1);
+        assert_eq!((new_board.north & new_board.kings).count_ones(), 2);
     }
 
     // a king should never be demoted when leaving the opponent's base/ under any other circumstance

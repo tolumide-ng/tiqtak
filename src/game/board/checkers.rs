@@ -83,7 +83,7 @@ impl Board {
         natural_mvs.into_iter().collect()
     }
 
-    pub(crate) fn play(&mut self, mv: Action) -> Option<Self> {
+    pub(crate) fn play(&self, mv: Action) -> Option<Self> {
         let options = self.options(self.turn);
         let valid = options
             .iter()
@@ -98,11 +98,18 @@ impl Board {
 
         let (north, south, kings, qmvs) = match self.turn {
             Player::North => {
+                // if the piece is a moving king, we ensure that they remain king no-matter where they move, by updating there position on king bin
+                let existing_king = (self.kings & (1 << src)) != 0;
+                // let mut kings = self.kings;
+                // if existing_king {
+                //     kings = kings & !(1 << src);
+                //     kings = kings | 1 << tgt;
+                // }
+
                 let north = (self.north & !(1 << src)) | 1 << tgt; // we remove the piece from src (and then add it to the target (|...))
                 let south = self.south & !((*capture as u64) << tgt);
 
-                let is_king = (BitBoard::BOTTOM & (1 << tgt)) != 0;
-                let kings = self.kings | ((is_king as u64) << tgt);
+                let kings = self.kings | ((mv.promoted as u64) << tgt);
 
                 let cp = !(mv.capture) as u8;
                 let qmvs = ((self.qmvs.0 + 1) * cp, self.qmvs.1 * cp);
@@ -110,11 +117,17 @@ impl Board {
                 (north, south, kings, qmvs)
             }
             Player::South => {
+                // let existing_king = (self.kings & (1 << src)) != 0;
+                // let mut kings = self.kings;
+                // if existing_king {
+                //     kings = kings & !(1 << src);
+                //     kings = kings | 1 << tgt;
+                // }
+
                 let south = (self.south & !(1 << src)) | 1 << tgt;
                 let north = self.north & !((*capture as u64) << tgt);
 
-                let is_king = (BitBoard::TOP & (1 << tgt)) != 0;
-                let kings = self.kings | ((is_king as u64) << tgt);
+                let kings = self.kings | ((mv.promoted as u64) << tgt);
 
                 let cp = (!mv.capture) as u8;
                 let qmvs = (self.qmvs.0 * cp, (self.qmvs.1 + 1) * cp);
