@@ -42,18 +42,13 @@ impl BitBoard {
             let mut capture = false;
             let mut promoted = false;
 
-            let self_on_target = self.current & tgt != 0;
+            let self_on_target = (self.current | self.team) & tgt != 0;
             let enemy_on_target = self.other & tgt != 0;
             let valid_capture = ((tgt & !v_mask & !hor_mask) != 0)
                 && ((tgt.shift_by(shift, turn)) & (self.current | self.other | self.team) == 0);
 
             if self_on_target || (enemy_on_target && !valid_capture) {
                 continue;
-            }
-
-            if src == 2 && tgt.trailing_zeros() == 9 {
-                println!("the value of self on target is >>>> {}", self_on_target);
-                println!("this is me and me \n\n");
             }
 
             if enemy_on_target {
