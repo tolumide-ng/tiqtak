@@ -1,7 +1,8 @@
 use std::collections::HashSet;
 
+use crate::Board;
 use crate::game::u64_shift::U64Ext;
-use crate::{Board, game::utils::Player};
+use crate::game::utils::Player;
 
 use super::action::Action;
 
@@ -31,7 +32,13 @@ impl BitBoard {
         };
 
         // South
-        let mut pcs = (!v_mask) & self.current & !hor_mask;
+        let mut pcs = (!v_mask) & self.current & (!hor_mask);
+        // println!(
+        //     "the count here is >>>>>>>>>>>>>> {:?} ---------------- {:?}",
+        //     pcs.count_ones(),
+        //     pcs.trailing_zeros()
+        // );
+
         let mut mvs = HashSet::with_capacity(pcs.count_ones() as usize);
 
         while pcs != 0 {
@@ -42,58 +49,36 @@ impl BitBoard {
             let mut capture = false;
             let mut promoted = false;
 
-            let self_on_target = (self.current | self.team) & tgt != 0;
+            let self_on_target = ((self.current | self.team) & tgt) != 0;
             let enemy_on_target = self.other & tgt != 0;
             let valid_capture = ((tgt & !v_mask & !hor_mask) != 0)
-                && ((tgt.shift_by(shift, turn)) & (self.current | self.other | self.team) == 0);
+                && ((tgt.shift_by(shift, turn)) & (self.current | self.other | self.team) == 0); // ensures landing(jumping target) space is empty
 
             if self_on_target || (enemy_on_target && !valid_capture) {
                 continue;
             }
 
-            if enemy_on_target {
+            if enemy_on_target && valid_capture {
                 let new_others = self.other & !tgt;
                 tgt = tgt.shift_by(shift, turn);
 
                 promoted = (tgt.trailing_zeros() / 8) == ((turn as u32) * 7);
 
-                let new_current = (self.current & !(1 << src)) | self.team | tgt;
+                let new_team = (self.current & !(1 << src)) | (self.team & !(1 << src)) | tgt;
+                // let new_current = (self.current & !(1 << src)) | self.team;
                 capture = true;
 
                 let kings = (promoted as u64) * tgt;
 
-                // let team = tgt;
-                // let bb = BitBoard::new(tgt, new_others, new_current);
-                // let bb = match turn {
-                //     Player::North => BitBoard::new(new_current | kings, new_others, new_current),
-                //     Player::South => BitBoard::new(new_others, new_current),
-                // };
-                // let result = bb.moves(turn);
-                // let result = bb.moves(turn);
+                let board = BitBoard::new(tgt, new_others, new_team);
 
-                let mut result = BitBoard::new(tgt, new_others, new_current).moves(turn);
-                if kings != 0 {
-                    let more = BitBoard::new(tgt, new_others, new_current).moves(!turn);
+                let mut result = board.moves(turn);
+                (kings != 0).then(|| {
+                    let more = board.moves(!turn);
                     result = &result | &more;
-                }
+                });
                 let result = result.into_iter().filter(|x| x.capture).collect();
-
-                // let board = match turn {
-                //     Player::North => Board::with(new_current, new_others, kings, turn, (0, 0)),
-                //     Player::South => Board::with(new_others, new_current, kings, turn, (0, 0)),
-                // };
-                // let result = board.options(turn);
-                // let result = result.into_iter().filter(|x| x.capture).collect();
-
-                // if this current pirce is a king, we need to be able to continue with that process here
-                // let board = match turn {
-                //     Player::North => Board::with(new_current, new_others, kings, turn, (0, 0)),
-                //     Player::South => Board::with(new_others, new_current, kings, turn, (0, 0)),
-                // };
-
-                // let result = board.options(turn);
-                // let result = result.into_iter().filter(|x| x.capture).collect();
-
+                //
                 mvs = &mvs | &result // combines both (hashset automatically helps us remove duplicates)
             }
 
@@ -143,7 +128,6 @@ impl BitBoard {
     /// exclude the pieces already on row 1 (bottom row)
     pub(crate) fn bottom_left(&self) -> HashSet<Action> {
         self.get(Self::LEFT, Self::BOTTOM_LEFT_MV, Player::North)
-        // vec![]
     }
 
     pub(super) fn new(current: u64, other: u64, team: u64) -> Self {
@@ -167,6 +151,8 @@ impl From<(u64, u64, u64)> for BitBoard {
 
 #[cfg(test)]
 mod tests {
+    use crate::Board;
+
     use super::*;
 
     #[test]

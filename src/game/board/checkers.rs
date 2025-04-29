@@ -1,4 +1,4 @@
-use std::{collections::HashSet, fmt::Display, ops::Index};
+use std::{fmt::Display, ops::Index};
 
 use crate::game::{action::Action, bitboard::BitBoard, utils::Player};
 
@@ -64,44 +64,64 @@ impl Board {
         }
     }
 
-    // todo: we need to establish and differentiate between what is a capture and isn't
+    pub(crate) fn is_valid(&self, mv: Action, turn: Player) -> bool {
+        let src_exists = (self[turn] & (1 << mv.src)) != 0;
+        let is_king = (self.kings & (1 << mv.src)) != 0;
+
+        if !src_exists {
+            return false;
+        }
+
+        let board = BitBoard::new(1 << mv.src, self[!turn], self[turn]);
+        let mut mvs = board.moves(turn);
+        if is_king {
+            let more_mvs = board.moves(!turn);
+            mvs = &mvs | &more_mvs
+        }
+
+        mvs.contains(&mv)
+    }
 
     /// returns all the possible options a selected piece can play
     /// Vec<(from, to, capture)>
+    /// TODO!!!! ->>>> SHOULD THIS RETURN A VEC<VEC<ACTION>> INSTEAD???? TO HANDLE JUMPING MOVES LOGIC???
     pub(crate) fn options(&self, turn: Player) -> Vec<Action> {
+        // println!("ORIGINATING FROM HERE ((((((((((((((((((-----)))))))))))))))))) \n{self}");
         let regulars = self.regular(turn);
         let kings = self.kings(turn);
 
         let opponent = self[!turn];
+        // println!(
+        //     "about to search the natural moves-------------------->>>>>>>>>>>::::::::::*****---"
+        // );
         let mut natural_mvs = BitBoard::from((regulars | kings, opponent, 0)).moves(turn);
         let king_mvs = BitBoard::from((kings, opponent, regulars)).moves(!turn); // extra king moves
-
-        // natural_mvs.reserve(king_mvs.len());
-        // natural_mvs.append(&mut king_mvs);
         natural_mvs = &natural_mvs | &king_mvs;
 
         natural_mvs.into_iter().collect()
     }
 
-    pub(crate) fn play(&self, mv: Action) -> Option<Self> {
-        let options = self.options(self.turn);
-        let valid = options
-            .iter()
-            .find(|op| op.src == mv.src && op.tgt == mv.tgt);
+    pub(crate) fn play_jumping(&self, mvs: Vec<Action>) -> Option<Self> {
+        // let
+        // mvs.reverse();
 
-        let Some(Action {
-            src, tgt, capture, ..
-        }) = valid
-        else {
+        None
+    }
+
+    pub(crate) fn play(&self, mv: Action) -> Option<Self> {
+        if !self.is_valid(mv, self.turn) {
             return None;
-        };
+        }
+        let Action {
+            src, tgt, capture, ..
+        } = mv;
 
         let (north, south, kings, qmvs) = match self.turn {
             Player::North => {
                 // if the piece is a moving king, we ensure that they remain king no-matter where they move, by updating there position on king bin
                 let kings = self.kings ^ (((self.kings >> src) & 1) * ((1 << src) | (1 << tgt)));
                 let north = (self.north & !(1 << src)) | 1 << tgt; // we remove the piece from src (and then add it to the target (|...))
-                let south = self.south & !((*capture as u64) << tgt);
+                let south = self.south & !((capture as u64) << tgt);
 
                 let kings = kings | ((mv.promoted as u64) << tgt);
 
@@ -113,7 +133,7 @@ impl Board {
             Player::South => {
                 let kings = self.kings ^ (((self.kings >> src) & 1) * ((1 << src) | (1 << tgt)));
                 let south = (self.south & !(1 << src)) | 1 << tgt;
-                let north = self.north & !((*capture as u64) << tgt);
+                let north = self.north & !((capture as u64) << tgt);
 
                 let kings = kings | ((mv.promoted as u64) << tgt);
 
@@ -183,6 +203,9 @@ impl Display for Board {
         writeln!(f, "Turn: {:?}", self.turn)?;
         write!(f, "Quiet moves: {:?}", self.qmvs)?;
         writeln!(f, "checkers board")?;
+        writeln!(f, "South: {:0x}", self.south)?;
+        writeln!(f, "North: {:0x}", self.north)?;
+        writeln!(f, "Kings: {:0x}", self.kings)?;
 
         Ok(())
     }
