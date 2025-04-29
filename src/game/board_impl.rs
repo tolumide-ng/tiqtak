@@ -34,8 +34,8 @@ impl State<Action, Player, AppError> for Board {
     }
 
     fn apply_action(&self, action: &Action) -> Result<(Self, Player), AppError> {
-        let mut board = self.clone();
-        let Some(state) = board.play(*action) else {
+        // let mut board = self.clone();
+        let Some(state) = self.play(*action) else {
             return Err(AppError::IllegalMove);
         };
 
