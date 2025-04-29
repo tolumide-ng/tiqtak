@@ -8,7 +8,7 @@ pub(crate) mod game;
 pub(crate) mod mcts; // should this be moved into a separate workspace?
 
 fn main() {
-    for i in 0..2 {
+    for i in 0..6 {
         println!("------------------ROUND {}------------------", i);
         let north = Player::North;
         let south = Player::South;

@@ -62,14 +62,37 @@ impl BitBoard {
 
                 let kings = (promoted as u64) * tgt;
 
-                // if this current pirce is a king, we need to be able to continue with that process here
-                let board = match turn {
-                    Player::North => Board::with(new_current, new_others, kings, turn, (0, 0)),
-                    Player::South => Board::with(new_others, new_current, kings, turn, (0, 0)),
-                };
+                // let team = tgt;
+                // let bb = BitBoard::new(tgt, new_others, new_current);
+                // let bb = match turn {
+                //     Player::North => BitBoard::new(new_current | kings, new_others, new_current),
+                //     Player::South => BitBoard::new(new_others, new_current),
+                // };
+                // let result = bb.moves(turn);
+                // let result = bb.moves(turn);
 
-                let result = board.options(turn);
+                let mut result = BitBoard::new(tgt, new_others, new_current).moves(turn);
+                if kings != 0 {
+                    let more = BitBoard::new(tgt, new_others, new_current).moves(!turn);
+                    result = &result | &more;
+                }
                 let result = result.into_iter().filter(|x| x.capture).collect();
+
+                // let board = match turn {
+                //     Player::North => Board::with(new_current, new_others, kings, turn, (0, 0)),
+                //     Player::South => Board::with(new_others, new_current, kings, turn, (0, 0)),
+                // };
+                // let result = board.options(turn);
+                // let result = result.into_iter().filter(|x| x.capture).collect();
+
+                // if this current pirce is a king, we need to be able to continue with that process here
+                // let board = match turn {
+                //     Player::North => Board::with(new_current, new_others, kings, turn, (0, 0)),
+                //     Player::South => Board::with(new_others, new_current, kings, turn, (0, 0)),
+                // };
+
+                // let result = board.options(turn);
+                // let result = result.into_iter().filter(|x| x.capture).collect();
 
                 mvs = &mvs | &result // combines both (hashset automatically helps us remove duplicates)
             }
@@ -86,6 +109,17 @@ impl BitBoard {
         }
 
         mvs
+    }
+
+    pub(crate) fn moves(&self, play_as: Player) -> HashSet<Action> {
+        let (mut left, right) = match play_as {
+            Player::South => (self.top_left(), self.top_right()),
+            Player::North => (self.bottom_left(), self.bottom_right()),
+        };
+
+        left = &left | &right;
+
+        left
     }
 
     /// exclude the pieces already on column A (left column)
@@ -110,20 +144,6 @@ impl BitBoard {
     pub(crate) fn bottom_left(&self) -> HashSet<Action> {
         self.get(Self::LEFT, Self::BOTTOM_LEFT_MV, Player::North)
         // vec![]
-    }
-
-    pub(crate) fn moves(&self, direction: Player) -> HashSet<Action> {
-        let (mut left, mut right) = match direction {
-            Player::South => (self.top_left(), self.top_right()),
-            Player::North => (self.bottom_left(), self.bottom_right()),
-        };
-
-        // left.reserve(right.len());
-        // left.append(&mut right);
-
-        left = &left | &right;
-
-        left
     }
 
     pub(super) fn new(current: u64, other: u64, team: u64) -> Self {
@@ -211,7 +231,12 @@ mod tests {
         let kings = 1 << 42;
 
         let board = Board::with(north, south, kings, Player::North, (0, 0));
+        println!("{board}");
         let received = board.options(Player::North);
+
+        // received.sort();
+
+        received.iter().for_each(|x| println!("{}", x.to_string()));
 
         let expected = [
             (54u8, 36u8, true, false),
@@ -257,7 +282,10 @@ mod tests {
         let north = 0x14000008000000u64;
 
         let board = Board::with(north, south, 0, Player::South, (0, 0));
+        println!("{board}");
         let received = board.options(Player::South);
+
+        received.iter().for_each(|x| println!("{}", x.to_string()));
 
         let expected = [
             (41u8, 59u8, true, true),
@@ -269,6 +297,8 @@ mod tests {
         expected
             .iter()
             .for_each(|mv| assert!(received.contains(&Action::from(*mv))));
+
+        // assert!(false)
     }
 
     #[test]
