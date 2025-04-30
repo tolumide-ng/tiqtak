@@ -5,7 +5,7 @@ use crate::mcts::traits::Action as MctsAction;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct ActionPath {
-    pub(crate) mvs: [u16; 12],
+    pub(crate) mvs: [u16; 20],
     pub(crate) len: usize,
 }
 
@@ -20,7 +20,7 @@ impl Display for ActionPath {
 impl ActionPath {
     pub(crate) fn new() -> Self {
         Self {
-            mvs: [0u16; 12],
+            mvs: [0u16; 20],
             len: 0,
         }
     }
@@ -31,20 +31,35 @@ impl ActionPath {
     }
 
     pub(crate) fn prepend(&mut self, mv: Action) {
-        self.mvs.copy_within(0.., 1);
+        let prevs = self.mvs;
+        self.mvs = [0; 20];
         self.mvs[0] = mv.into();
+        self.mvs[1..].copy_from_slice(&prevs[..19]);
         self.len += 1;
+
+        // self.mvs.copy_within(0.., 1);
+        // self.mvs[0] = mv.into();
+        // self.len += 1;
     }
 }
 
 impl From<Action> for ActionPath {
     fn from(value: Action) -> Self {
         let mut result = Self {
-            mvs: [0; 12],
+            mvs: [0; 20],
             len: 0,
         };
 
         result.append(value);
         result
+    }
+}
+
+impl From<&[u16]> for ActionPath {
+    fn from(value: &[u16]) -> Self {
+        let mut path = Self::new();
+        path.mvs[..value.len()].copy_from_slice(value);
+        path.len = value.len();
+        path
     }
 }

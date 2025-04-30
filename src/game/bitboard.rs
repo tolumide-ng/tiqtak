@@ -217,35 +217,47 @@ impl From<(u64, u64, u64)> for BitBoard {
 //             .for_each(|mv| assert!(received.contains(&Action::from(*mv))));
 //     }
 
-//     // should return all mulitple moves (for a single piece) in one go for a regular player test (bottom-left -->> bottom-right)
-//     // same as above, but testing for kings
-//     #[test]
-//     fn should_return_all_multiples_moves_by_one_piece() {
-//         let south = 0x200008000801u64;
-//         let north = 0x40000000000000u64;
+// should return all mulitple moves (for a single piece) in one go for a regular player test (bottom-left -->> bottom-right)
+// same as above, but testing for kings
+#[test]
+fn should_return_all_multiples_moves_by_one_piece() {
+    let south = 0x200008000801u64;
+    let north = 0x40000000000000u64;
 
-//         let kings = 1 << 42;
+    let kings = 1 << 42;
 
-//         let board = Board::with(north, south, kings, Player::North, (0, 0));
-//         println!("{board}");
-//         let received = board.options(Player::North);
+    let board = Board::with(north, south, kings, Player::North, (0, 0));
+    println!("{board}");
+    let received = board.options(Player::North);
 
-//         // received.sort();
+    // received.sort();
 
-//         received.iter().for_each(|x| println!("{}", x.to_string()));
+    received.iter().for_each(|x| println!("{}", x.to_string()));
 
-//         let expected = [
-//             (54u8, 36u8, true, false),
-//             (54u8, 47u8, false, false),
-//             (36, 18, true, false),
-//             (18, 4, true, true),
-//         ];
+    let expected = [
+        [
+            (54u8, 36u8, true, false),
+            (36, 18, true, false),
+            (18, 4, true, true),
+        ]
+        .iter(),
+        [(54u8, 47u8, false, false)].iter(),
+    ];
 
-//         assert_eq!(received.len(), expected.len());
-//         expected
-//             .iter()
-//             .for_each(|mv| assert!(received.contains(&Action::from(*mv))));
-//     }
+    assert_eq!(received.len(), expected.len());
+    let expected = expected
+        .into_iter()
+        .map(|a| {
+            let action_list = a.map(|ac| Action::from(*ac).into()).collect::<Vec<u16>>();
+            let action = ActionPath::from(action_list.as_slice());
+            return action;
+        })
+        .collect::<Vec<_>>();
+
+    // expected
+    //     .iter()
+    //     .for_each(|mv| assert!(received.contains(&Action::from(*mv))));
+}
 
 //     // should_return_all_possible_moves_in_the_start_position
 //     #[test]
