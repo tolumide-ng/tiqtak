@@ -18,7 +18,7 @@ impl Display for ActionPath {
 }
 
 impl ActionPath {
-    pub(crate) fn new(mvs: &[Action]) -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             mvs: [0u16; 12],
             len: 0,
@@ -33,5 +33,18 @@ impl ActionPath {
     pub(crate) fn prepend(&mut self, mv: Action) {
         self.mvs.copy_within(0.., 1);
         self.mvs[0] = mv.into();
+        self.len += 1;
+    }
+}
+
+impl From<Action> for ActionPath {
+    fn from(value: Action) -> Self {
+        let mut result = Self {
+            mvs: [0; 12],
+            len: 0,
+        };
+
+        result.append(value);
+        result
     }
 }

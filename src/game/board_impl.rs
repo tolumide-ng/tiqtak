@@ -3,9 +3,9 @@ use crate::{
     mcts::{algo::state::State, utils::reward::Reward},
 };
 
-use super::{action::Action, utils::AppError};
+use super::{path::ActionPath, utils::AppError};
 
-impl State<Action, Player, AppError> for Board {
+impl State<ActionPath, Player, AppError> for Board {
     fn is_terminal(&self) -> bool {
         self.get_reward() != Reward::Continue
     }
@@ -33,7 +33,7 @@ impl State<Action, Player, AppError> for Board {
         Reward::Continue
     }
 
-    fn apply_action(&self, action: &Action) -> Result<(Self, Player), AppError> {
+    fn apply_action(&self, action: &ActionPath) -> Result<(Self, Player), AppError> {
         // let mut board = self.clone();
         let Some(state) = self.play(*action) else {
             return Err(AppError::IllegalMove);
@@ -59,10 +59,7 @@ impl State<Action, Player, AppError> for Board {
     /// So, what this does is that it ensures only the originating moves of jumps moves are provided as possible actions in the first place
     /// NOTE: THIS IS STUPID AND NEEDS TO BE UPDATED;
     /// WHY???? COMPUTER CANNOT CURRENTLY PLAY JUMPING MOVES, WE NEED IT TO BE ABLE TO DO THAT!!
-    fn get_actions(&self) -> Vec<Action> {
+    fn get_actions(&self) -> Vec<ActionPath> {
         self.options(self.turn)
-            .into_iter()
-            .filter(|a| self.is_valid(*a, self.turn))
-            .collect::<Vec<_>>()
     }
 }
