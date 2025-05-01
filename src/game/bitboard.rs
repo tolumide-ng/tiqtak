@@ -160,7 +160,7 @@ impl From<(u64, u64, u64)> for BitBoard {
 #[cfg(test)]
 mod tests {
 
-    use crate::game::board::checkers::Board;
+    use crate::game::{board::checkers::Board, utils::Qmvs};
 
     use super::*;
 
@@ -187,7 +187,7 @@ mod tests {
         let north = 0x520000a00000000u64;
         let south = 0x40014200000u64;
 
-        let board = Board::with(north, south, 0, Player::South, (0, 0));
+        let board = Board::with(north, south, 0, Player::South, Qmvs::default());
         let received = board.options(Player::South);
 
         let expected = get_path(vec![
@@ -211,7 +211,7 @@ mod tests {
 
         let kings = 1 << 42;
 
-        let board = Board::with(north, south, kings, Player::South, (0, 0));
+        let board = Board::with(north, south, kings, Player::South, Qmvs::default());
         let received = board.options(Player::South);
 
         let expected = get_path(vec![
@@ -241,7 +241,7 @@ mod tests {
 
         let kings = 1 << 42;
 
-        let board = Board::with(north, south, kings, Player::North, (0, 0));
+        let board = Board::with(north, south, kings, Player::North, Qmvs::default());
         let received = board.options(Player::North);
 
         // received.sort();
@@ -296,7 +296,7 @@ mod tests {
         let south = 0x20000000000u64;
         let north = 0x14000008000000u64;
 
-        let board = Board::with(north, south, 0, Player::South, (0, 0));
+        let board = Board::with(north, south, 0, Player::South, Qmvs::default());
         // println!("{board}");
         let received = board.options(Player::South);
 
@@ -319,7 +319,7 @@ mod tests {
         let north = 0x8040200000000000u64;
         let south = 0x1028000000u64;
 
-        let board = Board::with(north, south, 0, Player::North, (0, 0));
+        let board = Board::with(north, south, 0, Player::North, Qmvs::default());
         println!("{board}");
 
         let received = board.options(Player::North);
@@ -340,7 +340,7 @@ mod tests {
 
         let kings = 1 << 2 | 1 << 6 | 1 << 57 | 1 << 59 | 1 << 61 | 1 << 63;
 
-        let board = Board::with(north, south, kings, Player::North, (0, 0));
+        let board = Board::with(north, south, kings, Player::North, Qmvs::default());
         let received = board.options(Player::North);
 
         let expected = get_path(vec![
@@ -368,7 +368,7 @@ mod tests {
 
         let kings = 1 << 2 | 1 << 6 | 1 << 57 | 1 << 59 | 1 << 61 | 1 << 63;
 
-        let board = Board::with(north, south, kings, Player::North, (0, 0));
+        let board = Board::with(north, south, kings, Player::North, Qmvs::default());
         println!("{board}");
 
         assert_eq!(board.kings.count_ones(), 6);

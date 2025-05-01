@@ -1,7 +1,14 @@
 use std::{fmt::Display, ops::Index};
+use wasm_bindgen::prelude::*;
 
-use crate::game::{action::Action, bitboard::BitBoard, path::ActionPath, utils::Player};
+use crate::game::{
+    action::Action,
+    bitboard::BitBoard,
+    path::ActionPath,
+    utils::{Player, Qmvs},
+};
 
+#[wasm_bindgen]
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Board {
     /// white pieces and white kings
@@ -15,11 +22,13 @@ pub(crate) struct Board {
     /// Quiet Moves (quite_mvs): The number of moves that's happened without a capture so far
     /// this value automatically resets to 0 for both sides after any capture.
     /// any of the values reaching 20 would result ina  "draw"
-    pub(crate) qmvs: (u8, u8),
+    pub(crate) qmvs: Qmvs,
 }
 
+#[wasm_bindgen]
 impl Board {
-    pub(crate) fn new() -> Self {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Board {
         let north: u64 = 0xaa55aa0000000000;
         let south: u64 = 0x55aa55;
 
@@ -28,11 +37,11 @@ impl Board {
             south,
             kings: 0,
             turn: Player::South,
-            qmvs: (0, 0),
+            qmvs: Qmvs::default(),
         }
     }
 
-    pub(crate) fn with(north: u64, south: u64, kings: u64, turn: Player, qmvs: (u8, u8)) -> Self {
+    pub fn with(north: u64, south: u64, kings: u64, turn: Player, qmvs: Qmvs) -> Self {
         Self {
             north,
             south,
@@ -132,12 +141,11 @@ impl Board {
                 Player::South => (them, us),
             };
 
-            let turn_idx = turn as usize;
-            let mut qmvs = [board.qmvs.0, board.qmvs.1];
-            qmvs[turn_idx] = (qmvs[turn_idx] + 1) * cp;
-            qmvs[1 - turn_idx] *= cp;
+            let mut qmvs = board.qmvs;
+            qmvs[turn] = (qmvs[turn] + 1) * cp;
+            qmvs[!turn] *= cp;
 
-            board = Self::with(north, south, kings, turn, (qmvs[0], qmvs[1]));
+            board = Self::with(north, south, kings, turn, qmvs);
         }
 
         board.turn = !self.turn;

@@ -3,7 +3,7 @@ use crate::mcts::{algo::state::State, utils::reward::Reward};
 use super::{
     board::checkers::Board,
     path::ActionPath,
-    utils::{AppError, Player},
+    utils::{AppError, Player, Qmvs},
 };
 
 impl State<ActionPath, Player, AppError> for Board {
@@ -20,7 +20,7 @@ impl State<ActionPath, Player, AppError> for Board {
             return Reward::WonBy(Player::North);
         }
 
-        let (n, s) = self.qmvs;
+        let Qmvs { north: n, south: s } = self.qmvs;
         if n == 20 || s == 20 {
             return Reward::Draw;
         }
