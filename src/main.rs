@@ -1,4 +1,4 @@
-use game::{board::checkers::Board, utils::Player};
+use game::{action::Action, board::checkers::Board, utils::Player};
 use mcts::{
     algo::{state::State, tree_search::MCTS},
     utils::{limit::Limit, reward::Reward, skill_level::SkillLevel, strength::Strength},
@@ -27,7 +27,7 @@ fn main() {
 
             let mv = mcts.run();
 
-            println!("playing {}", mv.to_string());
+            mv.iter().for_each(|x| println!("{} -->", Action::from(*x)));
             board = board.play(mv).unwrap();
 
             println!("{board}");
