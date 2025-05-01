@@ -1,4 +1,5 @@
 use std::{fmt::Display, ops::Index};
+#[cfg(feature = "web")]
 use wasm_bindgen::prelude::*;
 
 use crate::game::{
@@ -10,7 +11,7 @@ use crate::game::{
 
 #[cfg_attr(feature = "web", wasm_bindgen)]
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct Board {
+pub struct Board {
     /// white pieces and white kings
     pub(crate) north: u64,
     /// black pieces pieces and black kings
@@ -73,7 +74,7 @@ impl Board {
         }
     }
 
-    pub(crate) fn is_valid(&self, action: ActionPath, turn: Player) -> bool {
+    pub fn is_valid(&self, action: ActionPath, turn: Player) -> bool {
         assert!(
             action.len > 0,
             "Invalid Action: There must be atleast one move in an action"
@@ -96,7 +97,7 @@ impl Board {
     }
 
     /// returns all the possible options a selected piece can play
-    pub(crate) fn options(&self, turn: Player) -> Vec<ActionPath> {
+    pub fn options(&self, turn: Player) -> Vec<ActionPath> {
         let regulars = self.regular(turn);
         let kings = self.kings(turn);
 
@@ -110,7 +111,7 @@ impl Board {
         natural_mvs
     }
 
-    pub(crate) fn play(&self, action: ActionPath) -> Option<Self> {
+    pub fn play(&self, action: ActionPath) -> Option<Self> {
         if !self.is_valid(action, self.turn) {
             return None;
         }

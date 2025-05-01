@@ -1,6 +1,7 @@
-use std::ops::{Deref, Index, IndexMut, Not};
+use std::ops::{Index, IndexMut, Not};
 
 use thiserror::Error;
+#[cfg(feature = "web")]
 use wasm_bindgen::prelude::*;
 
 use crate::mcts::traits::{MCTSError, Player as PlayerTrait};

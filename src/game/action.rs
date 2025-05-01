@@ -1,15 +1,20 @@
 use std::fmt::Display;
 
+#[cfg(feature = "web")]
+use wasm_bindgen::prelude::*;
+
 use crate::mcts::traits::Action as MctsAction;
 
+#[cfg_attr(feature = "web", wasm_bindgen)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct Action {
+pub struct Action {
     pub(crate) src: u8,
     pub(crate) tgt: u8,
     pub(crate) capture: bool,
     pub(crate) promoted: bool,
 }
 
+#[cfg_attr(feature = "web", wasm_bindgen)]
 impl From<(u8, u8, bool, bool)> for Action {
     fn from((src, tgt, capture, promoted): (u8, u8, bool, bool)) -> Self {
         Self {
@@ -21,12 +26,14 @@ impl From<(u8, u8, bool, bool)> for Action {
     }
 }
 
-impl Action {
-    const SHIFT_SRC: u8 = 8;
-    const SHIFT_TGT: u8 = 2;
-    const SHIFT_CP: u8 = 1; // shift_capture
+const SHIFT_SRC: u8 = 8;
+const SHIFT_TGT: u8 = 2;
+const SHIFT_CP: u8 = 1; // shift_capture
 
-    pub(crate) fn new(src: u8, tgt: u8, capture: bool, promoted: bool) -> Self {
+#[cfg_attr(feature = "web", wasm_bindgen)]
+impl Action {
+    #[cfg_attr(feature = "web", wasm_bindgen(constructor))]
+    pub fn new(src: u8, tgt: u8, capture: bool, promoted: bool) -> Self {
         Self {
             src,
             tgt,
@@ -58,9 +65,9 @@ impl Display for Action {
 
 impl From<Action> for u16 {
     fn from(value: Action) -> Self {
-        let result = (u16::from(value.src) << Action::SHIFT_SRC)
-            | (u16::from(value.tgt) << Action::SHIFT_TGT)
-            | (u16::from(value.capture) << Action::SHIFT_CP)
+        let result = (u16::from(value.src) << SHIFT_SRC)
+            | (u16::from(value.tgt) << SHIFT_TGT)
+            | (u16::from(value.capture) << SHIFT_CP)
             | u16::from(value.promoted);
 
         result
@@ -69,9 +76,9 @@ impl From<Action> for u16 {
 
 impl From<u16> for Action {
     fn from(value: u16) -> Self {
-        let src = ((value >> Action::SHIFT_SRC) & 0b0011_1111) as u8;
-        let tgt = ((value >> Action::SHIFT_TGT) & 0b0011_1111) as u8;
-        let capture = ((value >> Action::SHIFT_CP) & 1) != 0;
+        let src = ((value >> SHIFT_SRC) & 0b0011_1111) as u8;
+        let tgt = ((value >> SHIFT_TGT) & 0b0011_1111) as u8;
+        let capture = ((value >> SHIFT_CP) & 1) != 0;
         let promoted = (value & 0b0000_0001) != 0;
 
         Self {
