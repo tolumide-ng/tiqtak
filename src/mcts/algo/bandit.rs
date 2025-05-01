@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::mcts::{
     traits::{Action, MCTSError, Player},
-    utils::rand::{genrand, getrand},
+    utils::rand::genrand,
 };
 
 use super::{node::Node, state::State};

@@ -159,7 +159,8 @@ impl From<(u64, u64, u64)> for BitBoard {
 
 #[cfg(test)]
 mod tests {
-    use crate::Board;
+
+    use crate::game::board::checkers::Board;
 
     use super::*;
 

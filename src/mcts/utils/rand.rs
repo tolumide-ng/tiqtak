@@ -1,29 +1,17 @@
-use getrandom::Error;
-
-pub(crate) fn getrand(len: usize) -> Result<usize, Error> {
-    assert!(len > 0, "len must be greater than 0");
-
-    let mut buf = [0u8; 8]; // max of 8bytes for usize
-    getrandom::fill(&mut buf)?;
-    let idx = u64::from_le_bytes(buf);
-    Ok((idx % len as u64) as usize)
-}
+use getrandom::getrandom;
 
 pub(crate) fn genrand(min: usize, max: usize) -> usize {
-    if max < min {
-        println!("the min is {min} and the max is {max}");
-        panic!("min must be less than max");
-    }
-
-    if min == max {
-        return min;
-    }
+    assert!(min < max, "min must be less than max");
     let range = max - min;
-    let mut buf = [0u8; 8];
-    getrandom::fill(&mut buf).expect("Failed to generate random bytes");
 
-    let random_value = u64::from_le_bytes(buf);
-    let scaled_value = (random_value as usize) % range;
+    let mut buf = [0u8; std::mem::size_of::<usize>()];
+    getrandom(&mut buf).expect("random failed");
 
-    min + scaled_value
+    let value = match buf.len() {
+        4 => usize::from_le_bytes(buf[..4].try_into().unwrap()),
+        8 => usize::from_le_bytes(buf.try_into().unwrap()),
+        _ => unreachable!("Unsupported usize size"),
+    };
+
+    min + (value % range)
 }

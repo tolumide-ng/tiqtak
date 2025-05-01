@@ -1,9 +1,10 @@
-use crate::{
-    Board, Player,
-    mcts::{algo::state::State, utils::reward::Reward},
-};
+use crate::mcts::{algo::state::State, utils::reward::Reward};
 
-use super::{path::ActionPath, utils::AppError};
+use super::{
+    board::checkers::Board,
+    path::ActionPath,
+    utils::{AppError, Player},
+};
 
 impl State<ActionPath, Player, AppError> for Board {
     fn is_terminal(&self) -> bool {

@@ -5,10 +5,7 @@ use std::{
 
 use crate::mcts::{
     traits::{Action, MCTSError, Player},
-    utils::{
-        rand::{genrand, getrand},
-        reward::Reward,
-    },
+    utils::{rand::genrand, reward::Reward},
 };
 
 use super::{bandit::MultiArmedBandit, state::State};

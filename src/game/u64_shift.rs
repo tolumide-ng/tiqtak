@@ -1,4 +1,4 @@
-use crate::Player;
+use crate::game::utils::Player;
 
 pub(crate) trait U64Ext {
     fn shift_by(&self, shift: u8, player: Player) -> u64;

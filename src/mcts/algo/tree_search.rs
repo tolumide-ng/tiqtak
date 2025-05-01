@@ -3,11 +3,7 @@ use std::{cell::RefCell, rc::Rc, time::Instant};
 
 use crate::mcts::{
     traits::{Action, MCTSError, Player},
-    utils::{
-        limit::Limit,
-        rand::{genrand, getrand},
-        skill_level::SkillLevel,
-    },
+    utils::{limit::Limit, rand::genrand, skill_level::SkillLevel},
 };
 
 use super::{node::Node, state::State};
