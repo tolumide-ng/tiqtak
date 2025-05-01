@@ -64,53 +64,47 @@ impl Board {
         }
     }
 
-    // pub(crate) fn is_valid(&self, mv: Action, turn: Player) -> bool {
-    //     let src_exists = (self[turn] & (1 << mv.src)) != 0;
-    //     let is_king = (self.kings & (1 << mv.src)) != 0;
+    pub(crate) fn is_valid(&self, action: ActionPath, turn: Player) -> bool {
+        assert!(
+            action.len > 0,
+            "Invalid Action: There must be atleast one move in an action"
+        );
+        let mv = Action::from(action[0]);
+        let src_mask = 1 << mv.src;
 
-    //     if !src_exists {
-    //         return false;
-    //     }
+        if (self[turn] & src_mask) == 0 {
+            return false;
+        }
 
-    //     let board = BitBoard::new(1 << mv.src, self[!turn], self[turn]);
-    //     let mut mvs = board.moves(turn);
-    //     if is_king {
-    //         let more_mvs = board.moves(!turn);
-    //         mvs = &mvs | &more_mvs
-    //     }
+        let board = BitBoard::new(1 << mv.src, self[!turn], self[turn]);
+        let mut moves = board.moves(turn);
 
-    //     mvs.contains(&mv)
-    // }
+        if self.kings & src_mask != 0 {
+            moves.extend(board.moves(!turn));
+        }
+
+        moves.contains(&action)
+    }
 
     /// returns all the possible options a selected piece can play
-    /// Vec<(from, to, capture)>
-    /// TODO!!!! ->>>> SHOULD THIS RETURN A VEC<VEC<ACTION>> INSTEAD???? TO HANDLE JUMPING MOVES LOGIC???
     pub(crate) fn options(&self, turn: Player) -> Vec<ActionPath> {
-        // println!("ORIGINATING FROM HERE ((((((((((((((((((-----)))))))))))))))))) \n{self}");
         let regulars = self.regular(turn);
         let kings = self.kings(turn);
 
         let opponent = self[!turn];
-        // println!(
-        //     "about to search the natural moves-------------------->>>>>>>>>>>::::::::::*****---"
-        // );
         let mut natural_mvs = BitBoard::from((regulars | kings, opponent, 0)).moves(turn);
         let king_mvs = BitBoard::from((kings, opponent, regulars)).moves(!turn); // extra king moves
-        // natural_mvs = &natural_mvs | &king_mvs;
+
         natural_mvs.reserve(king_mvs.len());
         natural_mvs.extend(king_mvs);
 
         natural_mvs
     }
 
-    pub(crate) fn play_jumping(&self, mvs: Vec<Action>) -> Option<Self> {
-        // let
-        // mvs.reverse();
-
-        None
-    }
-
     pub(crate) fn play(&self, action: ActionPath) -> Option<Self> {
+        if !self.is_valid(action, self.turn) {
+            return None;
+        }
         let mut board = *self;
 
         for mv in &action.mvs[..action.len] {
@@ -121,47 +115,29 @@ impl Board {
                 promoted,
             } = Action::from(*mv);
 
-            // if !self.is_valid(mv, self.turn) {
-            //     return None;
-            // }
+            let src_mask = 1 << src;
+            let tgt_mask = 1 << tgt;
 
-            let (north, south, kings, qmvs) = match board.turn {
-                Player::North => {
-                    // if the piece is a moving king, we ensure that they remain king no-matter where they move, by updating there position on king bin
-                    let kings =
-                        board.kings ^ (((board.kings >> src) & 1) * ((1 << src) | (1 << tgt)));
-                    let north = (board.north & !(1 << src)) | 1 << tgt; // we remove the piece from src (and then add it to the target (|...))
-                    let south = board.south & !((capture as u64) << tgt);
+            // if the piece is a moving king, we ensure that they remain king no-matter where they move, by updating there position on king bin
+            let existing_kings = board.kings ^ (((board.kings >> src) & 1) * (src_mask | tgt_mask));
+            let kings = existing_kings | ((promoted as u64) << tgt); // if the piece was just promoted, we add them to the list of kings
+            let cp = !capture as u8;
 
-                    let kings = kings | ((promoted as u64) << tgt);
+            let turn = board.turn;
+            let us = (board[turn] & !src_mask) | tgt_mask;
+            let them = board[!turn] & !((capture as u64) << tgt);
 
-                    let cp = !(capture) as u8;
-                    let qmvs = ((board.qmvs.0 + 1) * cp, board.qmvs.1 * cp);
-
-                    (north, south, kings, qmvs)
-                }
-                Player::South => {
-                    let kings =
-                        board.kings ^ (((board.kings >> src) & 1) * ((1 << src) | (1 << tgt)));
-                    let south = (board.south & !(1 << src)) | 1 << tgt;
-                    let north = board.north & !((capture as u64) << tgt);
-
-                    let kings = kings | ((promoted as u64) << tgt);
-
-                    let cp = (!capture) as u8;
-                    let qmvs = (board.qmvs.0 * cp, (board.qmvs.1 + 1) * cp);
-
-                    (north, south, kings, qmvs)
-                }
+            let (north, south) = match turn {
+                Player::North => (us, them),
+                Player::South => (them, us),
             };
 
-            board = Self {
-                north,
-                south,
-                kings,
-                qmvs,
-                ..board
-            };
+            let turn_idx = turn as usize;
+            let mut qmvs = [board.qmvs.0, board.qmvs.1];
+            qmvs[turn_idx] = (qmvs[turn_idx] + 1) * cp;
+            qmvs[1 - turn_idx] *= cp;
+
+            board = Self::with(north, south, kings, turn, (qmvs[0], qmvs[1]));
         }
 
         board.turn = !self.turn;

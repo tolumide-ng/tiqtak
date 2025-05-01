@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, ops::Deref};
 
 use super::action::Action;
 use crate::mcts::traits::Action as MctsAction;
@@ -31,15 +31,25 @@ impl ActionPath {
     }
 
     pub(crate) fn prepend(&mut self, mv: Action) {
-        let prevs = self.mvs;
-        self.mvs = [0; 20];
-        self.mvs[0] = mv.into();
-        self.mvs[1..].copy_from_slice(&prevs[..19]);
-        self.len += 1;
+        assert!(self.len < 20, "ActionPath overflow");
 
-        // self.mvs.copy_within(0.., 1);
-        // self.mvs[0] = mv.into();
-        // self.len += 1;
+        self.mvs.copy_within(0..self.len, 1);
+        self.mvs[0] = mv.into();
+        self.len += 1;
+    }
+
+    pub(crate) fn all_captures(&self) -> bool {
+        self.mvs[..self.len]
+            .iter()
+            .all(|x| Action::from(*x).capture)
+    }
+
+    pub(crate) fn peek(&self, index: usize) -> Option<Action> {
+        if index > self.len {
+            return None;
+        }
+
+        return Some(self.mvs[index].into());
     }
 }
 
@@ -61,5 +71,13 @@ impl From<&[u16]> for ActionPath {
         path.mvs[..value.len()].copy_from_slice(value);
         path.len = value.len();
         path
+    }
+}
+
+impl Deref for ActionPath {
+    type Target = [u16];
+
+    fn deref(&self) -> &Self::Target {
+        &self.mvs[..self.len]
     }
 }

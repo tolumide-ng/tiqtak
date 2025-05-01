@@ -71,7 +71,7 @@ impl From<u16> for Action {
     fn from(value: u16) -> Self {
         let src = ((value >> Action::SHIFT_SRC) & 0b0011_1111) as u8;
         let tgt = ((value >> Action::SHIFT_TGT) & 0b0011_1111) as u8;
-        let capture = ((value >> Action::SHIFT_CP) & 0b0000_0010) != 0;
+        let capture = ((value >> Action::SHIFT_CP) & 1) != 0;
         let promoted = (value & 0b0000_0001) != 0;
 
         Self {
@@ -80,5 +80,44 @@ impl From<u16> for Action {
             capture,
             promoted,
         }
+    }
+}
+
+#[cfg(test)]
+mod action {
+    use super::Action;
+
+    #[test]
+    fn should_create_and_destructure_action() {
+        let action = Action::from((9, 18, true, false));
+        assert_eq!(action.src, 9);
+        assert_eq!(action.tgt, 18);
+        assert_eq!(action.capture, true);
+        assert_eq!(action.promoted, false);
+
+        let action_u16 = u16::from(action);
+        let new_action = Action::from(action_u16);
+
+        assert_eq!(new_action.src, 9);
+        assert_eq!(new_action.tgt, 18);
+        assert_eq!(new_action.capture, true);
+        assert_eq!(new_action.promoted, false);
+    }
+
+    #[test]
+    fn should_properly_destructure_more_actions() {
+        let action = Action::from((18, 23, false, true));
+        assert_eq!(action.src, 18);
+        assert_eq!(action.tgt, 23);
+        assert_eq!(action.capture, false);
+        assert_eq!(action.promoted, true);
+
+        let action_u16 = u16::from(action);
+        let new_action = Action::from(action_u16);
+
+        assert_eq!(new_action.src, 18);
+        assert_eq!(new_action.tgt, 23);
+        assert_eq!(new_action.capture, false);
+        assert_eq!(new_action.promoted, true);
     }
 }
