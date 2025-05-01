@@ -7,7 +7,7 @@ use crate::mcts::traits::{MCTSError, Player as PlayerTrait};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
-#[wasm_bindgen]
+#[cfg_attr(feature = "web", wasm_bindgen)]
 pub enum Player {
     North,
     South,
@@ -35,7 +35,7 @@ pub enum AppError {
 impl MCTSError for AppError {}
 
 /// Number of quiet moves per player
-#[wasm_bindgen]
+#[cfg_attr(feature = "web", wasm_bindgen)]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Qmvs {
     pub(crate) north: u8,

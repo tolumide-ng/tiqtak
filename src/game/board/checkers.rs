@@ -8,7 +8,7 @@ use crate::game::{
     utils::{Player, Qmvs},
 };
 
-#[wasm_bindgen]
+#[cfg_attr(feature = "web", wasm_bindgen)]
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Board {
     /// white pieces and white kings
@@ -25,9 +25,9 @@ pub(crate) struct Board {
     pub(crate) qmvs: Qmvs,
 }
 
-#[wasm_bindgen]
+#[cfg_attr(feature = "web", wasm_bindgen)]
 impl Board {
-    #[wasm_bindgen(constructor)]
+    #[cfg_attr(feature = "web", wasm_bindgen(constructor))]
     pub fn new() -> Board {
         let north: u64 = 0xaa55aa0000000000;
         let south: u64 = 0x55aa55;
