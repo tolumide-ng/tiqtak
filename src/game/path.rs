@@ -33,11 +33,13 @@ impl ActionPath {
         }
     }
 
+    #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn append(&mut self, mv: Action) {
         self.mvs[self.len] = mv.into();
         self.len += 1;
     }
 
+    #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn prepend(&mut self, mv: Action) {
         assert!(self.len < LEN, "ActionPath overflow");
 
@@ -55,7 +57,6 @@ impl ActionPath {
     }
 }
 
-#[cfg_attr(feature = "web", wasm_bindgen)]
 impl From<Action> for ActionPath {
     fn from(value: Action) -> Self {
         let mut result = Self {
@@ -68,9 +69,7 @@ impl From<Action> for ActionPath {
     }
 }
 
-#[cfg_attr(feature = "web", wasm_bindgen)]
 impl From<&[u16]> for ActionPath {
-    #[cfg_attr(feature = "web", wasm_bindgen)]
     fn from(value: &[u16]) -> Self {
         let mut path = Self::new();
         path.mvs[..value.len()].copy_from_slice(value);

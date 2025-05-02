@@ -74,6 +74,7 @@ impl Board {
         }
     }
 
+    #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn is_valid(&self, action: ActionPath, turn: Player) -> bool {
         assert!(
             action.len > 0,
@@ -97,6 +98,7 @@ impl Board {
     }
 
     /// returns all the possible options a selected piece can play
+    #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn options(&self, turn: Player) -> Vec<ActionPath> {
         let regulars = self.regular(turn);
         let kings = self.kings(turn);
@@ -111,6 +113,7 @@ impl Board {
         natural_mvs
     }
 
+    #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn play(&self, action: ActionPath) -> Option<Self> {
         if !self.is_valid(action, self.turn) {
             return None;

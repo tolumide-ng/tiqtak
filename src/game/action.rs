@@ -14,7 +14,6 @@ pub struct Action {
     pub(crate) promoted: bool,
 }
 
-#[cfg_attr(feature = "web", wasm_bindgen)]
 impl From<(u8, u8, bool, bool)> for Action {
     fn from((src, tgt, capture, promoted): (u8, u8, bool, bool)) -> Self {
         Self {
