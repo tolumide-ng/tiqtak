@@ -8,6 +8,15 @@ use crate::mcts::traits::Action as MctsAction;
 
 const LEN: usize = 12;
 
+/// A list of action the user intends to play, in a scenario where there is no jump move
+/// this would only be one move(Action)
+/// ```rust
+/// let mut mv = ActionPath::new(); // creates an empty
+/// mv.append(Action::new(8, 32, true, false)) // adds this to the mv list
+/// mv.prepend(Action::from(48, 32, true, false)) // Reserves the original order of the moves, but adds this as the first move, followed by the existing ones
+/// mv.append(Action::new(8, 2, false, true)) // append to the moves list
+/// // final path would look like 16(src) -> 48(src) -> 32(target) -> 8 -> 2
+/// ```
 #[cfg_attr(feature = "web", wasm_bindgen)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ActionPath {
@@ -25,6 +34,7 @@ impl Display for ActionPath {
 
 #[cfg_attr(feature = "web", wasm_bindgen)]
 impl ActionPath {
+    /// Creates a new ActionPath with no move in it at all
     #[cfg_attr(feature = "web", wasm_bindgen(constructor))]
     pub fn new() -> Self {
         Self {
@@ -33,12 +43,16 @@ impl ActionPath {
         }
     }
 
+    /// Appends an action (move) to the actionPath
     #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn append(&mut self, mv: Action) {
         self.mvs[self.len] = mv.into();
         self.len += 1;
     }
 
+    /// Prepends an action,
+    /// presists the existing order of the moves, but automatically makes this new move the first move  
+    /// followed by the existing moves already on this path
     #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn prepend(&mut self, mv: Action) {
         assert!(self.len < LEN, "ActionPath overflow");
@@ -48,6 +62,9 @@ impl ActionPath {
         self.len += 1;
     }
 
+    /// Returns the move(Action) at the `index` position of this actionPath  
+    /// returns None if there is no move at that index
+    #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn peek(&self, index: usize) -> Option<Action> {
         if index > self.len {
             return None;

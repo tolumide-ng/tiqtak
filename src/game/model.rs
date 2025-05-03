@@ -1,2 +1,2 @@
-pub(crate) mod action;
+pub mod action;
 pub mod path;

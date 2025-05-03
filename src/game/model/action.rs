@@ -5,6 +5,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::mcts::traits::Action as MctsAction;
 
+/// A specific move on the checkers board
 #[cfg_attr(feature = "web", wasm_bindgen)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Action {
@@ -31,6 +32,11 @@ const SHIFT_CP: u8 = 1; // shift_capture
 
 #[cfg_attr(feature = "web", wasm_bindgen)]
 impl Action {
+    /// Creates a new Action(move) for the checkers board  
+    /// src: represents the position of the piece that would be moved  
+    /// tgt: represents the target position where this piece would be placed after the move  
+    /// capture: Whether or not this move would be capturing the opponent's piece on the board  
+    /// promoted: Whether or not this move would result in the promotion of the moving(this) piece
     #[cfg_attr(feature = "web", wasm_bindgen(constructor))]
     pub fn new(src: u8, tgt: u8, capture: bool, promoted: bool) -> Self {
         Self {

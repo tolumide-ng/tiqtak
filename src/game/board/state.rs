@@ -30,6 +30,7 @@ pub struct Board {
 
 #[cfg_attr(feature = "web", wasm_bindgen)]
 impl Board {
+    /// Creates a brand new Checkers board with 12 pieces per team(player)
     #[cfg_attr(feature = "web", wasm_bindgen(constructor))]
     pub fn new() -> Board {
         let north: u64 = 0xaa55aa0000000000;
@@ -44,6 +45,18 @@ impl Board {
         }
     }
 
+    /// Creates a Checkers board using the provided information (args)
+    /// e.g.  
+    /// **north** -- the north team (the pieces available for the northern team),
+    /// where each bit represents the position of the piece on the 64bits board  
+    /// **south** -- u64 value representing the board and the (southern) pieces from the
+    /// perspective of the southern player (this must include the kings of this piece)  
+    /// **kings** -- u64 value representing the checkers board, and all the
+    /// kings (both north and south) with each present king on the board represented by a set bit  
+    /// **qmvs** - meaning quiet moves (qmvs), tracks the number of quiet moves since a captures by both
+    /// players, this value automatically resets to (0, 0) if any of the players captures the opponent's piece
+    /// If there is no capture after atleast 20 moves (from either player), the game automatically becomes a draw  
+    #[cfg_attr(feature = "web", wasm_bindgen(constructor))]
     pub fn with(north: u64, south: u64, kings: u64, turn: Player, qmvs: Qmvs) -> Self {
         Self {
             north,
@@ -76,6 +89,7 @@ impl Board {
         }
     }
 
+    /// Checks whether the move (ActionPath) about to be played is valid based on the board's current state
     #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn is_valid(&self, action: ActionPath, turn: Player) -> bool {
         assert!(
@@ -99,7 +113,7 @@ impl Board {
         moves.contains(&action)
     }
 
-    /// returns all the possible options a selected piece can play
+    /// Returns all the possible options(moves) that the selected user can play
     #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn options(&self, turn: Player) -> Vec<ActionPath> {
         let regulars = self.regular(turn);
@@ -115,6 +129,8 @@ impl Board {
         natural_mvs
     }
 
+    /// This returns a new Board state (the new board state) after the move (ActionPath) is applied to the board
+    /// 
     #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn play(&self, action: ActionPath) -> Option<Self> {
         if !self.is_valid(action, self.turn) {
@@ -174,7 +190,7 @@ impl State<ActionPath, Player, AppError> for Board {
         }
 
         let Qmvs { north: n, south: s } = self.qmvs;
-        if n == 20 || s == 20 {
+        if n >= 20 || s >= 20 {
             return Reward::Draw;
         }
 
