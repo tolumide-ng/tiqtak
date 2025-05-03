@@ -1,0 +1,29 @@
+name: Release 💦
+
+on:
+  push:
+    tags:
+     - "v*"
+
+jobs:
+  # ci:
+  #  name: CI Workflow
+  #  runs-on: ubuntu-latest
+  publish-crate:
+    name: Publish to crates.io
+    # needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --all-features
+      - run: cargo publish --token ${{ secrets.CARGO_TOKEN }}
+  publish-npm:
+    name: Publish to NPM
+    # needs: ci
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      # - node@v3??
+    
