@@ -1,8 +1,6 @@
-use crate::game::u64_shift::U64Ext;
+use crate::game::model::{action::Action, path::ActionPath};
+use crate::game::traits::u64_shift::U64Ext;
 use crate::game::utils::Player;
-
-use super::action::Action;
-use super::path::ActionPath;
 
 pub(crate) struct BitBoard {
     current: u64,
@@ -160,7 +158,7 @@ impl From<(u64, u64, u64)> for BitBoard {
 #[cfg(test)]
 mod tests {
 
-    use crate::game::{board::checkers::Board, utils::Qmvs};
+    use crate::game::{board::state::Board, utils::Qmvs};
 
     use super::*;
 

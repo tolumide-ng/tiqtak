@@ -1,1 +1,2 @@
-pub mod checkers;
+pub mod state;
+pub(crate) mod bitboard;
