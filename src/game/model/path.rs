@@ -11,7 +11,7 @@ const LEN: usize = 12;
 /// A list of action the user intends to play, in a scenario where there is no jump move
 /// this would only be one move(Action)
 /// ```rust
-/// use tiktaq::game::model::{action::Action, path::ActionPath};
+/// use tiqtak::game::model::{action::Action, path::ActionPath};
 /// let mut mv = ActionPath::new(); // creates an empty
 /// mv.append(Action::new(8, 32, true, false)); // adds this to the mv list
 /// mv.prepend(Action::from((48, 32, true, false))); // Reserves the original order of the moves, but adds this as the first move, followed by the existing ones
