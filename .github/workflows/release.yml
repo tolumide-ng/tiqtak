@@ -6,7 +6,7 @@ on:
      - "v*"
 
 jobs:
-  run-tests:
+  ci:
    name: CI Workflow
    uses: ./.github/workflows/ci.yml
   publish-crate:
