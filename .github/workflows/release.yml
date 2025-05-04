@@ -8,7 +8,7 @@ on:
 jobs:
   run-tests:
    name: CI Workflow
-   uses: ./github/workflows/ci.yml
+   uses: ./.github/workflows/ci.yml
   publish-crate:
     name: Publish to crates.io
     needs: ci
