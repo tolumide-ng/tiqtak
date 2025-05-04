@@ -8,7 +8,7 @@ exclude = [
 ]
 description = "simple to use Checkers engine"
 license = "MIT OR Apache-2.0"
-keywords = ["checkers", "mcts", "monte-carlo", "search-heuristics", "checkers-engine", "tiqtak"]
+keywords = ["checkers", "mcts", "monte-carlo", "search-heuristics", "checkers-engine"]
 publish = true
 repository = "https://github.com/tolumide-ng/tiqtak"
 

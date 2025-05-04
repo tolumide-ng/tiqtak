@@ -56,19 +56,13 @@ impl BitBoard {
                 promoted = (tgt.trailing_zeros() / 8) == ((turn as u32) * 7);
 
                 let new_team = (self.current & !(1 << src)) | (self.team & !(1 << src)) | tgt;
-                // let new_current = (self.current & !(1 << src)) | self.team;
                 capture = true;
 
                 let kings = (promoted as u64) * tgt;
 
                 let board = BitBoard::new(tgt, new_others, new_team);
 
-                let parent = Action {
-                    src,
-                    tgt: tgt.trailing_zeros() as u8,
-                    capture,
-                    promoted,
-                };
+                let parent = Action::new(src, tgt.trailing_zeros() as u8, capture, promoted);
 
                 let result = board.moves(turn);
                 result.into_iter().for_each(|mut actions| {
