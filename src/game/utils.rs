@@ -1,31 +1,12 @@
-use std::ops::{Index, IndexMut, Not};
+use std::ops::{Index, IndexMut};
 
 use thiserror::Error;
 #[cfg(feature = "web")]
 use wasm_bindgen::prelude::*;
 
-use crate::mcts::traits::{MCTSError, Player as PlayerTrait};
+use crate::mcts::traits::MCTSError;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[repr(u8)]
-#[cfg_attr(feature = "web", wasm_bindgen)]
-pub enum Player {
-    North,
-    South,
-}
-
-impl Not for Player {
-    type Output = Self;
-
-    fn not(self) -> Self::Output {
-        match self {
-            Self::North => Self::South,
-            Self::South => Self::North,
-        }
-    }
-}
-
-impl PlayerTrait for Player {}
+use super::model::player::Player;
 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum AppError {

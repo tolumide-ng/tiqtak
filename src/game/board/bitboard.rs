@@ -1,6 +1,6 @@
+use crate::game::model::player::Player;
 use crate::game::model::{action::Action, path::ActionPath};
 use crate::game::traits::u64_shift::U64Ext;
-use crate::game::utils::Player;
 
 pub(crate) struct BitBoard {
     current: u64,

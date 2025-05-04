@@ -5,8 +5,9 @@ use wasm_bindgen::prelude::*;
 use crate::{
     game::{
         board::bitboard::BitBoard,
+        model::player::Player,
         model::{action::Action, path::ActionPath},
-        utils::{AppError, Player, Qmvs},
+        utils::{AppError, Qmvs},
     },
     mcts::{algo::state::State, utils::reward::Reward},
 };
@@ -130,7 +131,7 @@ impl Board {
     }
 
     /// This returns a new Board state (the new board state) after the move (ActionPath) is applied to the board
-    /// 
+    ///
     #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn play(&self, action: ActionPath) -> Option<Self> {
         if !self.is_valid(action, self.turn) {
