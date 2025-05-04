@@ -6,24 +6,51 @@ on:
      - "v*"
 
 jobs:
-  # ci:
-  #  name: CI Workflow
-  #  runs-on: ubuntu-latest
+  run-tests:
+   name: CI Workflow
+   uses: ./github/workflows/ci.yml
   publish-crate:
     name: Publish to crates.io
-    # needs: ci
+    needs: ci
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo test --all-features
-      - run: cargo publish --token ${{ secrets.CARGO_TOKEN }}
+      
+      - name: Run cargo publish dry-run
+        run: cargo publish --dry-run --token ${{ secrets.CARGO_TOKEN }}
+      
+      - name: Publish to crates.io
+        run: cargo publish --token ${{ secrets.CARGO_TOKEN }}
   publish-npm:
     name: Publish to NPM
-    # needs: ci
+    needs: ci
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
       - uses: dtolnay/rust-toolchain@stable
-      # - node@v3??
-    
+      - run: cargo install wasm-pack
+      - run: wasm-pack build --release --target bundler
+      - run: npm publish pkg/
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  release-binary:
+    name: Build and Upload binary
+    needs: ci
+    runs-on: ubuntu-latest
+    env:
+      TAG_NAME: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      
+      - name: Build binary
+        run: |
+          cargo build --release
+          mkdir dist
+          cp target/release/tiqtak dist/tiqtak-${{ env.TAG_NAME }}-x86_64-linux
