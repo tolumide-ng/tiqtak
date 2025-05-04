@@ -3,7 +3,7 @@ use std::{fmt::Display, ops::Deref};
 #[cfg(feature = "web")]
 use wasm_bindgen::prelude::*;
 
-use super::action::Action;
+use crate::game::model::action::Action;
 use crate::mcts::traits::Action as MctsAction;
 
 const LEN: usize = 12;
@@ -11,10 +11,11 @@ const LEN: usize = 12;
 /// A list of action the user intends to play, in a scenario where there is no jump move
 /// this would only be one move(Action)
 /// ```rust
+/// use tiktaq::game::model::{action::Action, path::ActionPath};
 /// let mut mv = ActionPath::new(); // creates an empty
-/// mv.append(Action::new(8, 32, true, false)) // adds this to the mv list
-/// mv.prepend(Action::from(48, 32, true, false)) // Reserves the original order of the moves, but adds this as the first move, followed by the existing ones
-/// mv.append(Action::new(8, 2, false, true)) // append to the moves list
+/// mv.append(Action::new(8, 32, true, false)); // adds this to the mv list
+/// mv.prepend(Action::from((48, 32, true, false))); // Reserves the original order of the moves, but adds this as the first move, followed by the existing ones
+/// mv.append(Action::new(8, 2, false, true)); // append to the moves list
 /// // final path would look like 16(src) -> 48(src) -> 32(target) -> 8 -> 2
 /// ```
 #[cfg_attr(feature = "web", wasm_bindgen)]
