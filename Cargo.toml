@@ -1,8 +1,16 @@
 [package]
-name = "tiktaq"
+name = "tiqtak"
 version = "0.1.0"
 edition = "2024"
 authors = ["Tolumide Shopein"]
+exclude = [
+    ".github/*",
+]
+description = "simple to use Checkers engine"
+license = "MIT OR Apache-2.0"
+keywords = ["checkers", "mcts", "monte-carlo", "search-heuristics", "checkers-engine"]
+publish = true
+repository = "https://github.com/tolumide-ng/checkers"
 
 [profile.release]
 debug = true
