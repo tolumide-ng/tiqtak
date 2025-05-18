@@ -16,17 +16,17 @@ use crate::{
 #[derive(Debug, Clone, Copy)]
 pub struct Board {
     /// white pieces and white kings
-    pub(crate) north: u64,
+    pub north: u64,
     /// black pieces pieces and black kings
-    pub(crate) south: u64,
+    pub south: u64,
     /// black and white kings
-    pub(crate) kings: u64,
+    pub kings: u64,
     /// 0 is for first player, and 1 is for bottom player
-    pub(crate) turn: Player,
+    pub turn: Player,
     /// Quiet Moves (quite_mvs): The number of moves that's happened without a capture so far
     /// this value automatically resets to 0 for both sides after any capture.
     /// any of the values reaching 20 would result ina  "draw"
-    pub(crate) qmvs: Qmvs,
+    pub qmvs: Qmvs,
 }
 
 #[cfg_attr(feature = "web", wasm_bindgen)]
