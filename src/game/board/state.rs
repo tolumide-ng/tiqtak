@@ -5,11 +5,13 @@ use wasm_bindgen::prelude::*;
 use crate::{
     game::{
         board::bitboard::BitBoard,
-        model::player::Player,
-        model::{action::Action, path::ActionPath},
+        model::{action::Action, path::ActionPath, player::Player},
         utils::{AppError, Qmvs},
     },
-    mcts::{algo::state::State, utils::reward::Reward},
+    mcts::{
+        algo::{state::State, tree_search::MCTS},
+        utils::{limit::Limit, reward::Reward, skill_level::SkillLevel, strength::Strength},
+    },
 };
 
 #[cfg_attr(feature = "web", wasm_bindgen)]
@@ -173,6 +175,18 @@ impl Board {
 
         board.turn = !self.turn;
         return Some(board);
+    }
+
+    /// Generates the next best move based on the provided MCTS configuration
+    /// NB: Only use this method when you're trying to get a bot's next move  
+    /// exp: exploration constant for MCTS
+    /// col: cost of losing (recommended ==> -1.25)
+    /// limit: How long should MCTS think (in ms)? (recommended 100)
+    #[cfg_attr(feature = "web", wasm_bindgen(constructor))]
+    pub fn best_mv(&self, exp: f64, col: f64, limit: u128) -> ActionPath {
+        let skills = SkillLevel::One(Strength::new(exp, col, Limit::Time(limit)));
+        let mut mcts = MCTS::new(*self, self.turn, vec![Player::North, Player::South], skills);
+        mcts.run()
     }
 }
 

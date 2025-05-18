@@ -22,6 +22,9 @@ Available on [npm](https://www.npmjs.com/package/tiqtak) and [crates.io](https:/
 - [ ] More robust documentation
 - [ ] More tests
 - [ ] Examples on how this works
+- [ ] Explain the architecture of this library
+    - [ ] The board representation
+    - [ ] MCTS approach?
 
 
 ### Credit:
