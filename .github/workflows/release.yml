@@ -5,6 +5,9 @@ on:
     tags:
      - "v*"
 
+permissions:
+  contents: write
+
 jobs:
   ci:
    name: CI Workflow
@@ -48,9 +51,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      
+      - name: Build
+        run: echo ${{ github.sha }} > Release.txt
       - name: Build binary
         run: |
           cargo build --release
           mkdir dist
           cp target/release/tiqtak dist/tiqtak-${{ env.TAG_NAME }}-x86_64-linux
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: Release.txt
+      
