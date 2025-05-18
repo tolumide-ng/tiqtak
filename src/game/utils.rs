@@ -9,12 +9,12 @@ use crate::mcts::traits::MCTSError;
 use super::model::player::Player;
 
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
-pub enum AppError {
+pub enum ApiError {
     #[error("Illegal move")]
     IllegalMove,
 }
 
-impl MCTSError for AppError {}
+impl MCTSError for ApiError {}
 
 /// Number of quiet moves per player
 #[cfg_attr(feature = "web", wasm_bindgen)]

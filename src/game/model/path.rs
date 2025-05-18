@@ -4,6 +4,7 @@ use std::{fmt::Display, ops::Deref};
 use wasm_bindgen::prelude::*;
 
 use crate::game::model::action::Action;
+use crate::game::utils::ApiError;
 use crate::mcts::traits::Action as MctsAction;
 
 const LEN: usize = 12;
@@ -101,5 +102,36 @@ impl Deref for ActionPath {
 
     fn deref(&self) -> &Self::Target {
         &self.mvs[..self.len]
+    }
+}
+
+impl From<ActionPath> for String {
+    fn from(value: ActionPath) -> Self {
+        let mut result = format!("");
+
+        for (index, action) in (&value[..value.len]).iter().enumerate() {
+            result.push_str(&action.to_string());
+            if index != value.len() - 1 {
+                result.push('*');
+            }
+        }
+
+        result
+    }
+}
+
+impl TryFrom<String> for ActionPath {
+    type Error = ApiError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let mut result = Self::new();
+        let actions = value.split("*");
+
+        for ac in actions {
+            result.mvs[result.len] = ac.parse::<u16>().map_err(|_| ApiError::IllegalMove)?;
+            result.len += 1;
+        }
+
+        Ok(result)
     }
 }

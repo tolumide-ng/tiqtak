@@ -6,7 +6,7 @@ use crate::{
     game::{
         board::bitboard::BitBoard,
         model::{action::Action, path::ActionPath, player::Player},
-        utils::{AppError, Qmvs},
+        utils::{ApiError, Qmvs},
     },
     mcts::{
         algo::{state::State, tree_search::MCTS},
@@ -190,7 +190,7 @@ impl Board {
     }
 }
 
-impl State<ActionPath, Player, AppError> for Board {
+impl State<ActionPath, Player, ApiError> for Board {
     fn is_terminal(&self) -> bool {
         self.get_reward() != Reward::Continue
     }
@@ -218,10 +218,10 @@ impl State<ActionPath, Player, AppError> for Board {
         Reward::Continue
     }
 
-    fn apply_action(&self, action: &ActionPath) -> Result<(Self, Player), AppError> {
+    fn apply_action(&self, action: &ActionPath) -> Result<(Self, Player), ApiError> {
         // let mut board = self.clone();
         let Some(state) = self.play(*action) else {
-            return Err(AppError::IllegalMove);
+            return Err(ApiError::IllegalMove);
         };
 
         Ok((state, state.turn))
