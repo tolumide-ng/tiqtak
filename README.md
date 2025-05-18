@@ -1,4 +1,9 @@
 ## Checkers 🦅
+[![crates.io](https://img.shields.io/badge/tiqtak-hunter%20green
+)](https://crates.io/crates/tiqtak)
+[![npm version](https://img.shields.io/badge/tiqtak-hunter%20green
+)](https://www.npmjs.com/package/tiqtak)
+
 Simple Checkers engine, that handles all the `checkers` game logic for you, so you don't have to care.
 The current implementation uses [MCTS(Monte-Carlo Tree Search)](https://gibberblot.github.io/rl-notes/single-agent/mcts.html), in the future, this program might be extended to allow users provide their desired search heuristic algorithm
 
