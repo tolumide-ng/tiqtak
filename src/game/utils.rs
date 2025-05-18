@@ -18,7 +18,7 @@ impl MCTSError for AppError {}
 
 /// Number of quiet moves per player
 #[cfg_attr(feature = "web", wasm_bindgen)]
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Qmvs {
     pub(crate) north: u8,
     pub(crate) south: u8,

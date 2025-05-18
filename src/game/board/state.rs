@@ -15,7 +15,7 @@ use crate::{
 };
 
 #[cfg_attr(feature = "web", wasm_bindgen)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Board {
     /// white pieces and white kings
     pub north: u64,
