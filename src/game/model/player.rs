@@ -1,5 +1,7 @@
 use std::ops::Not;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 #[cfg(feature = "web")]
 use wasm_bindgen::prelude::*;
 
@@ -11,6 +13,7 @@ use crate::mcts::traits::Player as PlayerTrait;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
 #[cfg_attr(feature = "web", wasm_bindgen)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub enum Player {
     North,
     South,

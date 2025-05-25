@@ -1,5 +1,7 @@
 use std::ops::{Index, IndexMut};
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 #[cfg(feature = "web")]
 use wasm_bindgen::prelude::*;
@@ -18,6 +20,7 @@ impl MCTSError for ApiError {}
 
 /// Number of quiet moves per player
 #[cfg_attr(feature = "web", wasm_bindgen)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Qmvs {
     pub(crate) north: u8,

@@ -26,6 +26,7 @@ Available on [npm](https://www.npmjs.com/package/tiqtak) and [crates.io](https:/
 ### Todo:
 - [ ] More robust documentation
 - [ ] More tests
+- [ ] Migrate from using u64 to u32 for the board
 - [ ] Examples on how this works
 - [ ] Explain the architecture of this library
     - [ ] The board representation

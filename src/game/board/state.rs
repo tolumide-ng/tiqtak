@@ -1,3 +1,5 @@
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::{fmt::Display, ops::Index};
 #[cfg(feature = "web")]
 use wasm_bindgen::prelude::*;
@@ -16,6 +18,7 @@ use crate::{
 
 #[cfg_attr(feature = "web", wasm_bindgen)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Board {
     /// white pieces and white kings
     pub north: u64,
