@@ -11,7 +11,7 @@ pub struct Strength {
 }
 
 impl Strength {
-    pub(crate) fn new(e: f64, cost: f64, limit: Limit) -> Self {
+    pub fn new(e: f64, cost: f64, limit: Limit) -> Self {
         Self { e, cost, limit }
     }
 }

@@ -7,7 +7,7 @@
 //! by the user, rather than been forced to use the choices made by this author (me).
 //! To create a new board
 //! ```rust
-//! use tiqtak::game::board::state::Board;
+//! use tiqtak::Board;
 //!
 //! let mut board = Board::new(); // creates a new board
 //! println!("{board}");
@@ -21,5 +21,20 @@
 //! assert_ne!(board, new_board);
 //! ```
 
-pub mod game;
-pub(crate) mod mcts;
+mod game;
+mod mcts;
+
+pub use game::board::state::Board;
+pub use game::model::action::Action;
+pub use game::model::path::ActionPath;
+pub use game::model::player::Player;
+pub use game::utils::Qmvs;
+
+pub mod algo {
+    use crate::mcts;
+    pub use mcts::algo::{state::State, tree_search::MCTS};
+    pub use mcts::utils::limit::Limit;
+    pub use mcts::utils::reward::Reward;
+    pub use mcts::utils::skill_level::SkillLevel;
+    pub use mcts::utils::strength::Strength;
+}

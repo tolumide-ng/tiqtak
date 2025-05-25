@@ -1,11 +1,5 @@
-use game::{board::state::Board, model::action::Action, model::player::Player};
-use mcts::{
-    algo::{state::State, tree_search::MCTS},
-    utils::{limit::Limit, reward::Reward, skill_level::SkillLevel, strength::Strength},
-};
-
-pub(crate) mod game;
-pub(crate) mod mcts; // should this be moved into a separate workspace?
+use tiqtak::algo::{Limit, MCTS, Reward, SkillLevel, State, Strength};
+use tiqtak::{Action, Board, Player};
 
 fn main() {
     for i in 0..6 {

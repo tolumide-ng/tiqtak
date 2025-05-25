@@ -8,7 +8,7 @@ use crate::mcts::{
 
 use super::{node::Node, state::State};
 
-pub(crate) struct MCTS<S, A, P, E>
+pub struct MCTS<S, A, P, E>
 where
     S: State<A, P, E>,
     A: Action,
