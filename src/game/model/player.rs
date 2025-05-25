@@ -15,7 +15,7 @@ use crate::mcts::traits::Player as PlayerTrait;
 #[cfg_attr(feature = "web", wasm_bindgen)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub enum Player {
-    North,
+    North = 0,
     South,
 }
 
@@ -31,3 +31,12 @@ impl Not for Player {
 }
 
 impl PlayerTrait for Player {}
+
+impl From<Player> for usize {
+    fn from(value: Player) -> Self {
+        match value {
+            Player::North => 0,
+            Player::South => 1,
+        }
+    }
+}
