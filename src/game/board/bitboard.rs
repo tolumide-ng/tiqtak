@@ -8,6 +8,13 @@ pub(crate) struct BitBoard {
     team: u64,
 }
 
+mod chkrs32bits {
+    const LEFT: u32 = 0x11111111;
+    const RIGHT: u32 = 0x88888888;
+    const BOTTOM: u32 = 0x0000000F;
+    const TOP: u32 = 0xF0000000;
+}
+
 impl BitBoard {
     const LEFT: u64 = 0x101010101010101;
     const RIGHT: u64 = 0x8080808080808080;
