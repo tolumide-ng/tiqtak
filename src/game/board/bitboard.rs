@@ -13,6 +13,8 @@ mod chkrs32bits {
     const RIGHT: u32 = 0x88888888;
     const BOTTOM: u32 = 0x0000000F;
     const TOP: u32 = 0xF0000000;
+    const SOUTH: u32 = 0x00000FFF;
+    const NORTH: u32 = 0xFFF00000;
 }
 
 impl BitBoard {
