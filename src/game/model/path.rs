@@ -24,6 +24,7 @@ const LEN: usize = 12;
 pub struct ActionPath {
     pub(crate) mvs: [u16; LEN],
     pub(crate) len: usize,
+    pub(crate) is_u64: bool,
 }
 
 impl MctsAction for ActionPath {}
@@ -42,7 +43,21 @@ impl ActionPath {
         Self {
             mvs: [0u16; LEN],
             len: 0,
+            is_u64: true,
         }
+    }
+
+    /// Update the ActionPath to register the variant of action stored (only one format should be used for all the actions in this path)
+    #[cfg_attr(feature = "web", wasm_bindgen)]
+    pub fn variant(&mut self, is_u64: bool) {
+        self.is_u64 = is_u64;
+    }
+
+    /// Update the ActionPath to register the variant of action stored
+    #[cfg_attr(feature = "web", wasm_bindgen)]
+    #[cfg_attr(feature = "web", wasm_bindgen)]
+    pub fn is_u64(&self) -> bool {
+        self.is_u64
     }
 
     /// Appends an action (move) to the actionPath
@@ -81,6 +96,7 @@ impl From<Action> for ActionPath {
         let mut result = Self {
             mvs: [0; LEN],
             len: 0,
+            is_u64: true,
         };
 
         result.append(value);
@@ -88,6 +104,7 @@ impl From<Action> for ActionPath {
     }
 }
 
+// modify this to a tryfrom, so that it breaks if the actions are not of the same type
 impl From<&[u16]> for ActionPath {
     fn from(value: &[u16]) -> Self {
         let mut path = Self::new();
@@ -105,6 +122,7 @@ impl Deref for ActionPath {
     }
 }
 
+// modify this to a tryfrom, so that it breaks if the actions are not of the same type
 impl From<ActionPath> for String {
     fn from(value: ActionPath) -> Self {
         let mut result = format!("");

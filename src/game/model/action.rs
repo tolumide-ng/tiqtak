@@ -5,8 +5,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::mcts::traits::Action as MctsAction;
 
-/// TODO: user provided form would be in u62, but when applied to the board, it has to be in u32 bitboard form
-/// 
+///
 /// A specific move on the checkers board
 #[cfg_attr(feature = "web", wasm_bindgen)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -15,6 +14,7 @@ pub struct Action {
     pub(crate) tgt: u8,
     pub(crate) capture: bool,
     pub(crate) promoted: bool,
+    // todo! can we store whether this struct is a u64, or u32 in this struct and bin pack?
 }
 
 impl From<(u8, u8, bool, bool)> for Action {
@@ -70,6 +70,18 @@ impl Display for Action {
     }
 }
 
+/// TODO! NEED TO IMPROVE THIS FURTHER PLEASE!!
+/// THE MAX NUMBER OF BITS IN THE DECIMAL 63 (MAX POSSIBLE CELL IN A 0 INDEXED 64 BIT BITBOARD) IS 6BITS
+/// HOW?
+/// from lsb to msb (i.e msb <- lsb)
+/// first 6 bits - src
+/// next 6 bits - tgt
+/// next 1 bit - captured
+/// next 1 bit - prompted
+/// next 1 bit - whether this action is in u32 or u64 format for the squares
+///     if its u64 bit should be set to 1
+///     if its u32 bit should be set to 0
+/// last 1 bit - free for now
 impl From<Action> for u16 {
     fn from(value: Action) -> Self {
         let result = (u16::from(value.src) << SHIFT_SRC)
