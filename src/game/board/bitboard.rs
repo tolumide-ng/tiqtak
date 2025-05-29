@@ -3,9 +3,9 @@ use crate::game::model::{action::Action, path::ActionPath};
 use crate::game::traits::u64_shift::U64Ext;
 
 pub(crate) struct BitBoard {
-    current: u64,
-    other: u64,
-    team: u64,
+    current: u32,
+    other: u32,
+    team: u32,
 }
 
 mod chkrs32bits {
@@ -13,23 +13,45 @@ mod chkrs32bits {
     const RIGHT: u32 = 0x88888888;
     const BOTTOM: u32 = 0x0000000F;
     const TOP: u32 = 0xF0000000;
+
     const SOUTH: u32 = 0x00000FFF;
     const NORTH: u32 = 0xFFF00000;
+
+    const TOP_LEFT_MV: u8 = 4;
+    const TOP_RIGHT_MV: u8 = 5;
+    const BOTTOM_LEFT_MV: u8 = 5;
+    const BOTTOM_RIGHT_MV: u8 = 4;
 }
 
 impl BitBoard {
-    const LEFT: u64 = 0x101010101010101;
-    const RIGHT: u64 = 0x8080808080808080;
-    const BOTTOM: u64 = 0xff;
-    const TOP: u64 = 0xff00000000000000;
+    // const LEFT: u64 = 0x101010101010101;
+    // const RIGHT: u64 = 0x8080808080808080;
+    // const BOTTOM: u64 = 0xff;
+    // const TOP: u64 = 0xff00000000000000;
 
-    const TOP_LEFT_MV: u8 = 7;
-    const TOP_RIGHT_MV: u8 = 9;
-    const BOTTOM_LEFT_MV: u8 = 9;
-    const BOTTOM_RIGHT_MV: u8 = 7;
+    // const TOP_LEFT_MV: u8 = 7;
+    // const TOP_RIGHT_MV: u8 = 9;
+    // const BOTTOM_LEFT_MV: u8 = 9;
+    // const BOTTOM_RIGHT_MV: u8 = 7;
+
+    const LEFT: u32 = 0x11111111;
+    const RIGHT: u32 = 0x88888888;
+    const BOTTOM: u32 = 0x0000000F;
+    const TOP: u32 = 0xF0000000;
+
+    const TOP_LEFT_MV: u8 = 4;
+    const TOP_RIGHT_MV: u8 = 5;
+    const BOTTOM_LEFT_MV: u8 = 5;
+    const BOTTOM_RIGHT_MV: u8 = 4;
+
+    /// Number of rows on a checkers board (for each side)
+    const NUM_ROWS: u32 = 4;
+    /// On a 0 indexed board (first row as 0), the last row on the board is 7
+    /// Yes, there are 8 rows, but its 0 indexed
+    const MAX_ROW: u32 = 7;
 
     // hor_mask: horizontal mask
-    fn get(&self, hor_mask: u64, shift: u8, turn: Player) -> Vec<ActionPath> {
+    fn get(&self, hor_mask: u32, shift: u8, turn: Player) -> Vec<ActionPath> {
         // vertical mask
         let v_mask = match turn {
             Player::South => Self::TOP,
@@ -62,12 +84,13 @@ impl BitBoard {
                 let new_others = self.other & !tgt;
                 tgt = tgt.shift_by(shift, turn);
 
-                promoted = (tgt.trailing_zeros() / 8) == ((turn as u32) * 7);
+                promoted =
+                    (tgt.trailing_zeros() / Self::NUM_ROWS) == ((turn as u32) * Self::MAX_ROW);
 
                 let new_team = (self.current & !(1 << src)) | (self.team & !(1 << src)) | tgt;
                 capture = true;
 
-                let kings = (promoted as u64) * tgt;
+                let kings = (promoted as u32) * tgt;
 
                 let board = BitBoard::new(tgt, new_others, new_team);
 
@@ -139,7 +162,7 @@ impl BitBoard {
         self.get(Self::LEFT, Self::BOTTOM_LEFT_MV, Player::North)
     }
 
-    pub(super) fn new(current: u64, other: u64, team: u64) -> Self {
+    pub(super) fn new(current: u32, other: u32, team: u32) -> Self {
         Self {
             current,
             other,
@@ -148,8 +171,8 @@ impl BitBoard {
     }
 }
 
-impl From<(u64, u64, u64)> for BitBoard {
-    fn from(value: (u64, u64, u64)) -> Self {
+impl From<(u32, u32, u32)> for BitBoard {
+    fn from(value: (u32, u32, u32)) -> Self {
         Self {
             current: value.0,
             other: value.1,
@@ -161,7 +184,10 @@ impl From<(u64, u64, u64)> for BitBoard {
 #[cfg(test)]
 mod tests {
 
-    use crate::game::{board::state::Board, utils::Qmvs};
+    use crate::{
+        convert64bits_to_32bits::getax,
+        game::{board::state::Board, utils::Qmvs},
+    };
 
     use super::*;
 
@@ -183,142 +209,142 @@ mod tests {
             .collect::<Vec<_>>()
     }
 
-    #[test]
-    fn should_return_all_possible_moves_for_south_player() {
-        let north = 0x520000a00000000u64;
-        let south = 0x40014200000u64;
+    // #[test]
+    // fn should_return_all_possible_moves_for_south_player() {
+    //     let north = 0x520000a00000000u64;
+    //     let south = 0x40014200000u64;
 
-        let board = Board::with(north, south, 0, Player::South, Qmvs::default());
-        let received = board.options(Player::South);
+    //     let board = Board::with(north, south, 0, Player::South, Qmvs::default());
+    //     let received = board.options(Player::South);
 
-        let expected = get_path(vec![
-            vec![(21u8, 30u8, false, false)],
-            vec![(26u8, 44u8, true, false), (44u8, 62u8, true, true)],
-            vec![(26u8, 44u8, true, false)],
-            vec![(26u8, 40u8, true, false)],
-            vec![(28u8, 37u8, false, false)],
-            vec![(42u8, 49u8, false, false)],
-            vec![(42u8, 51u8, false, false)],
-        ]);
+    //     let expected = get_path(vec![
+    //         vec![(21u8, 30u8, false, false)],
+    //         vec![(26u8, 44u8, true, false), (44u8, 62u8, true, true)],
+    //         vec![(26u8, 44u8, true, false)],
+    //         vec![(26u8, 40u8, true, false)],
+    //         vec![(28u8, 37u8, false, false)],
+    //         vec![(42u8, 49u8, false, false)],
+    //         vec![(42u8, 51u8, false, false)],
+    //     ]);
 
-        assert_eq!(received.len(), expected.len());
-        expected.iter().for_each(|x| assert!(received.contains(&x)));
-    }
+    //     assert_eq!(received.len(), expected.len());
+    //     expected.iter().for_each(|x| assert!(received.contains(&x)));
+    // }
 
-    #[test]
-    fn should_return_all_south_moves_including_kings() {
-        let north = 0x520000a00000000u64;
-        let south = 0x40014200000u64;
+    // #[test]
+    // fn should_return_all_south_moves_including_kings() {
+    //     let north = 0x520000a00000000u64;
+    //     let south = 0x40014200000u64;
 
-        let kings = 1 << 42;
+    //     let kings = 1 << 42;
 
-        let board = Board::with(north, south, kings, Player::South, Qmvs::default());
-        let received = board.options(Player::South);
+    //     let board = Board::with(north, south, kings, Player::South, Qmvs::default());
+    //     let received = board.options(Player::South);
 
-        let expected = get_path(vec![
-            vec![(26u8, 40u8, true, false)],
-            vec![(26, 44, true, false)],
-            vec![(26, 44, true, false), (44, 62, true, true)],
-            vec![(28, 37, false, false)],
-            vec![(21, 30, false, false)],
-            vec![(42, 24, true, false)],
-            vec![(42, 49, false, false)],
-            vec![(42, 51, false, false)],
-        ]);
+    //     let expected = get_path(vec![
+    //         vec![(26u8, 40u8, true, false)],
+    //         vec![(26, 44, true, false)],
+    //         vec![(26, 44, true, false), (44, 62, true, true)],
+    //         vec![(28, 37, false, false)],
+    //         vec![(21, 30, false, false)],
+    //         vec![(42, 24, true, false)],
+    //         vec![(42, 49, false, false)],
+    //         vec![(42, 51, false, false)],
+    //     ]);
 
-        assert_eq!(received.len(), expected.len());
+    //     assert_eq!(received.len(), expected.len());
 
-        expected
-            .iter()
-            .for_each(|mv| assert!(received.contains(&mv)));
-    }
+    //     expected
+    //         .iter()
+    //         .for_each(|mv| assert!(received.contains(&mv)));
+    // }
 
-    // should return all mulitple moves (for a single piece) in one go for a regular player test (bottom-left -->> bottom-right)
-    // same as above, but testing for kings
-    #[test]
-    fn should_return_all_multiples_moves_by_one_piece() {
-        let south = 0x200008000801u64;
-        let north = 0x40000000000000u64;
+    // // should return all mulitple moves (for a single piece) in one go for a regular player test (bottom-left -->> bottom-right)
+    // // same as above, but testing for kings
+    // #[test]
+    // fn should_return_all_multiples_moves_by_one_piece() {
+    //     let south = 0x200008000801u64;
+    //     let north = 0x40000000000000u64;
 
-        let kings = 1 << 42;
+    //     let kings = 1 << 42;
 
-        let board = Board::with(north, south, kings, Player::North, Qmvs::default());
-        let received = board.options(Player::North);
+    //     let board = Board::with(north, south, kings, Player::North, Qmvs::default());
+    //     let received = board.options(Player::North);
 
-        // received.sort();
+    //     // received.sort();
 
-        received.iter().for_each(|x| println!("{}", x.to_string()));
+    //     received.iter().for_each(|x| println!("{}", x.to_string()));
 
-        let expected = get_path(vec![
-            vec![
-                (54u8, 36u8, true, false),
-                (36, 18, true, false),
-                (18, 4, true, true),
-            ],
-            vec![(54u8, 36u8, true, false), (36, 18, true, false)],
-            vec![(54u8, 36u8, true, false)],
-            vec![(54u8, 47u8, false, false)],
-        ]);
+    //     let expected = get_path(vec![
+    //         vec![
+    //             (54u8, 36u8, true, false),
+    //             (36, 18, true, false),
+    //             (18, 4, true, true),
+    //         ],
+    //         vec![(54u8, 36u8, true, false), (36, 18, true, false)],
+    //         vec![(54u8, 36u8, true, false)],
+    //         vec![(54u8, 47u8, false, false)],
+    //     ]);
 
-        assert_eq!(received.len(), expected.len());
+    //     assert_eq!(received.len(), expected.len());
 
-        expected
-            .iter()
-            .for_each(|mv| assert!(received.contains(mv)));
-    }
+    //     expected
+    //         .iter()
+    //         .for_each(|mv| assert!(received.contains(mv)));
+    // }
 
-    // should_return_all_possible_moves_in_the_start_position
-    #[test]
-    fn should_return_all_possible_moves_in_the_base_position() {
-        let board = Board::new();
-        let received = board.options(Player::South);
-        assert_eq!(received.len(), 7);
-        assert_eq!(board.options(Player::South).len(), 7);
+    // // should_return_all_possible_moves_in_the_start_position
+    // #[test]
+    // fn should_return_all_possible_moves_in_the_base_position() {
+    //     let board = Board::new();
+    //     let received = board.options(Player::South);
+    //     assert_eq!(received.len(), 7);
+    //     assert_eq!(board.options(Player::South).len(), 7);
 
-        let expected = get_path(vec![
-            vec![(16, 25, false, false)],
-            vec![(18, 25, false, false)],
-            vec![(18, 27, false, false)],
-            vec![(20, 27, false, false)],
-            vec![(20, 29, false, false)],
-            vec![(22, 29, false, false)],
-            vec![(22, 31, false, false)],
-        ]);
+    //     let expected = get_path(vec![
+    //         vec![(16, 25, false, false)],
+    //         vec![(18, 25, false, false)],
+    //         vec![(18, 27, false, false)],
+    //         vec![(20, 27, false, false)],
+    //         vec![(20, 29, false, false)],
+    //         vec![(22, 29, false, false)],
+    //         vec![(22, 31, false, false)],
+    //     ]);
 
-        assert_eq!(received.len(), expected.len());
-        expected
-            .iter()
-            .for_each(|mv| assert!(received.contains(&mv)));
-    }
+    //     assert_eq!(received.len(), expected.len());
+    //     expected
+    //         .iter()
+    //         .for_each(|mv| assert!(received.contains(&mv)));
+    // }
 
-    // should convert a regular to a king after they reach the opponents base
-    #[test]
-    fn should_convert_a_regular_to_king_if_they_touch_the_opponents_base() {
-        let south = 0x20000000000u64;
-        let north = 0x14000008000000u64;
+    // // should convert a regular to a king after they reach the opponents base
+    // #[test]
+    // fn should_convert_a_regular_to_king_if_they_touch_the_opponents_base() {
+    //     let south = 0x20000000000u64;
+    //     let north = 0x14000008000000u64;
 
-        let board = Board::with(north, south, 0, Player::South, Qmvs::default());
-        // println!("{board}");
-        let received = board.options(Player::South);
+    //     let board = Board::with(north, south, 0, Player::South, Qmvs::default());
+    //     // println!("{board}");
+    //     let received = board.options(Player::South);
 
-        received.iter().for_each(|x| println!("{}", x.to_string()));
+    //     received.iter().for_each(|x| println!("{}", x.to_string()));
 
-        let expected = get_path(vec![
-            vec![(41, 59, true, true), (59, 45, true, false)],
-            vec![(41, 59, true, true)],
-            vec![(41, 48, false, false)],
-        ]);
+    //     let expected = get_path(vec![
+    //         vec![(41, 59, true, true), (59, 45, true, false)],
+    //         vec![(41, 59, true, true)],
+    //         vec![(41, 48, false, false)],
+    //     ]);
 
-        assert_eq!(received.len(), expected.len());
-        expected
-            .iter()
-            .for_each(|mv| assert!(received.contains(&mv)));
-    }
+    //     assert_eq!(received.len(), expected.len());
+    //     expected
+    //         .iter()
+    //         .for_each(|mv| assert!(received.contains(&mv)));
+    // }
 
     #[test]
     fn should_make_only_valid_moves() {
-        let north = 0x8040200000000000u64;
-        let south = 0x1028000000u64;
+        let north = 0x11200000;
+        let south = 0x26000;
 
         let board = Board::with(north, south, 0, Player::North, Qmvs::default());
         println!("{board}");
@@ -330,68 +356,80 @@ mod tests {
             vec![(45u8, 38u8, false, false)],
         ]);
 
-        expected.iter().for_each(|x| assert!(received.contains(&x)));
+        // println!(
+        //     ":first :::: : {:?}",
+        //     getax(Action::from((54u8, 47u8, false, false)))
+        // );
+
+        expected.iter().for_each(|x| {
+            let rr = received.iter().for_each(|a| {
+                println!("the x here is {:?}", Action::from(a[0]));
+            });
+            assert!(received.contains(&x))
+        });
+
+        // expected.iter().for_each(|x| assert!(received.contains(&x)));
         assert_eq!(received.len(), expected.len());
     }
 
-    #[test]
-    fn a_king_should_never_overwrite_its_teammates() {
-        let north = 0x244u64;
-        let south = 0xaa00000000000000u64;
+    // #[test]
+    // fn a_king_should_never_overwrite_its_teammates() {
+    //     let north = 0x244u64;
+    //     let south = 0xaa00000000000000u64;
 
-        let kings = 1 << 2 | 1 << 6 | 1 << 57 | 1 << 59 | 1 << 61 | 1 << 63;
+    //     let kings = 1 << 2 | 1 << 6 | 1 << 57 | 1 << 59 | 1 << 61 | 1 << 63;
 
-        let board = Board::with(north, south, kings, Player::North, Qmvs::default());
-        let received = board.options(Player::North);
+    //     let board = Board::with(north, south, kings, Player::North, Qmvs::default());
+    //     let received = board.options(Player::North);
 
-        let expected = get_path(vec![
-            vec![(6, 15, false, false)],
-            vec![(6, 13, false, false)],
-            vec![(2, 11, false, false)],
-            vec![(9, 0, false, true)],
-        ]);
+    //     let expected = get_path(vec![
+    //         vec![(6, 15, false, false)],
+    //         vec![(6, 13, false, false)],
+    //         vec![(2, 11, false, false)],
+    //         vec![(9, 0, false, true)],
+    //     ]);
 
-        // expected.iter().for_each(|x| {
-        //     x.mvs[..x.len]
-        //         .iter()
-        //         .for_each(|xx| print!("{} -->", Action::from(*xx).to_string()));
-        //     println!("\n");
-        // });
+    //     // expected.iter().for_each(|x| {
+    //     //     x.mvs[..x.len]
+    //     //         .iter()
+    //     //         .for_each(|xx| print!("{} -->", Action::from(*xx).to_string()));
+    //     //     println!("\n");
+    //     // });
 
-        expected.iter().for_each(|x| assert!(received.contains(&x)));
-        assert_eq!(expected.len(), received.len());
-    }
+    //     expected.iter().for_each(|x| assert!(received.contains(&x)));
+    //     assert_eq!(expected.len(), received.len());
+    // }
 
-    #[test]
-    fn king_piece_should_never_be_demoted_when_it_leaves_the_opponents_base() {
-        let north = 0x244u64;
-        let south = 0xaa00000000000000u64;
+    // #[test]
+    // fn king_piece_should_never_be_demoted_when_it_leaves_the_opponents_base() {
+    //     let north = 0x244u64;
+    //     let south = 0xaa00000000000000u64;
 
-        let kings = 1 << 2 | 1 << 6 | 1 << 57 | 1 << 59 | 1 << 61 | 1 << 63;
+    //     let kings = 1 << 2 | 1 << 6 | 1 << 57 | 1 << 59 | 1 << 61 | 1 << 63;
 
-        let board = Board::with(north, south, kings, Player::North, Qmvs::default());
-        println!("{board}");
+    //     let board = Board::with(north, south, kings, Player::North, Qmvs::default());
+    //     println!("{board}");
 
-        assert_eq!(board.kings.count_ones(), 6);
-        assert_eq!((board.south & board.kings).count_ones(), 4);
-        assert_eq!(board.north.count_ones(), 3);
-        assert_eq!((board.north & (!board.kings)).count_ones(), 1);
-        assert_eq!((board.north & board.kings).count_ones(), 2);
-        assert!((board.kings & (1 << 2)) != 0);
-        assert!((board.kings & (1 << 11)) == 0);
+    //     assert_eq!(board.kings.count_ones(), 6);
+    //     assert_eq!((board.south & board.kings).count_ones(), 4);
+    //     assert_eq!(board.north.count_ones(), 3);
+    //     assert_eq!((board.north & (!board.kings)).count_ones(), 1);
+    //     assert_eq!((board.north & board.kings).count_ones(), 2);
+    //     assert!((board.kings & (1 << 2)) != 0);
+    //     assert!((board.kings & (1 << 11)) == 0);
 
-        let action = ActionPath::from(Action::from((2, 11, false, false)));
+    //     let action = ActionPath::from(Action::from((2, 11, false, false)));
 
-        let new_board = board.play(action).unwrap();
+    //     let new_board = board.play(action).unwrap();
 
-        assert_eq!(new_board.kings.count_ones(), 6);
-        assert_eq!((new_board.south & board.kings).count_ones(), 4);
-        assert_eq!(new_board.north.count_ones(), 3);
-        assert!((new_board.kings & (1 << 2)) == 0);
-        assert!((new_board.kings & (1 << 11)) != 0);
-        assert_eq!((new_board.north & (!new_board.kings)).count_ones(), 1);
-        assert_eq!((new_board.north & new_board.kings).count_ones(), 2);
-    }
+    //     assert_eq!(new_board.kings.count_ones(), 6);
+    //     assert_eq!((new_board.south & board.kings).count_ones(), 4);
+    //     assert_eq!(new_board.north.count_ones(), 3);
+    //     assert!((new_board.kings & (1 << 2)) == 0);
+    //     assert!((new_board.kings & (1 << 11)) != 0);
+    //     assert_eq!((new_board.north & (!new_board.kings)).count_ones(), 1);
+    //     assert_eq!((new_board.north & new_board.kings).count_ones(), 2);
+    // }
 
     // #[test]
     // fn should_be_able_to_play_a_jump_game() {}

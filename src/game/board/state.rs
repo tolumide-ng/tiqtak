@@ -21,11 +21,11 @@ use crate::{
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Board {
     /// white pieces and white kings
-    pub north: u64,
+    pub north: u32,
     /// black pieces pieces and black kings
-    pub south: u64,
+    pub south: u32,
     /// black and white kings
-    pub kings: u64,
+    pub kings: u32,
     /// 0 is for first player, and 1 is for bottom player
     pub turn: Player,
     /// Quiet Moves (quite_mvs): The number of moves that's happened without a capture so far
@@ -39,8 +39,11 @@ impl Board {
     /// Creates a brand new Checkers board with 12 pieces per team(player)
     #[cfg_attr(feature = "web", wasm_bindgen(constructor))]
     pub fn new() -> Board {
-        let north: u64 = 0xaa55aa0000000000;
-        let south: u64 = 0x55aa55;
+        // let north: u64 = 0xaa55aa0000000000;
+        // let south: u64 = 0x55aa55;
+
+        let south: u32 = 0x00000FFF;
+        let north: u32 = 0xFFF00000;
 
         Self {
             north,
@@ -63,7 +66,7 @@ impl Board {
     /// players, this value automatically resets to (0, 0) if any of the players captures the opponent's piece
     /// If there is no capture after atleast 20 moves (from either player), the game automatically becomes a draw  
     #[cfg_attr(feature = "web", wasm_bindgen(constructor))]
-    pub fn with(north: u64, south: u64, kings: u64, turn: Player, qmvs: Qmvs) -> Self {
+    pub fn with(north: u32, south: u32, kings: u32, turn: Player, qmvs: Qmvs) -> Self {
         Self {
             north,
             south,
@@ -80,7 +83,7 @@ impl Board {
     // to get the top moves (whichever direction) exclude any piece that is already on row 8
 
     /// returns the positions of the kings of the provided color on the board
-    fn kings(&self, player: Player) -> u64 {
+    fn kings(&self, player: Player) -> u32 {
         match player {
             Player::North => self.north & self.kings,
             Player::South => self.south & self.kings,
@@ -88,7 +91,7 @@ impl Board {
     }
 
     /// Returns the positions of the regular members for a specific color, excluding the kings on the board
-    fn regular(&self, player: Player) -> u64 {
+    fn regular(&self, player: Player) -> u32 {
         match player {
             Player::North => self.north & !self.kings,
             Player::South => self.south & !self.kings,
@@ -103,7 +106,7 @@ impl Board {
             "Invalid Action: There must be atleast one move in an action"
         );
         let mv = Action::from(action[0]);
-        let src_mask = 1 << mv.src;
+        let src_mask = 1u32 << mv.src;
 
         if (self[turn] & src_mask) == 0 {
             return false;
@@ -157,12 +160,12 @@ impl Board {
 
             // if the piece is a moving king, we ensure that they remain king no-matter where they move, by updating there position on king bin
             let existing_kings = board.kings ^ (((board.kings >> src) & 1) * (src_mask | tgt_mask));
-            let kings = existing_kings | ((promoted as u64) << tgt); // if the piece was just promoted, we add them to the list of kings
+            let kings = existing_kings | ((promoted as u32) << tgt); // if the piece was just promoted, we add them to the list of kings
             let cp = !capture as u8;
 
             let turn = board.turn;
             let us = (board[turn] & !src_mask) | tgt_mask;
-            let them = board[!turn] & !((capture as u64) << tgt);
+            let them = board[!turn] & !((capture as u32) << tgt);
 
             let (north, south) = match turn {
                 Player::North => (us, them),
@@ -244,7 +247,7 @@ impl State<ActionPath, Player, ApiError> for Board {
 }
 
 impl Index<Player> for Board {
-    type Output = u64;
+    type Output = u32;
 
     fn index(&self, index: Player) -> &Self::Output {
         match index {
@@ -254,48 +257,54 @@ impl Index<Player> for Board {
     }
 }
 
-impl Display for Board {
+impl std::fmt::Display for Board {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let dimension = 8;
-
+        let mut bit_index = 31u32;
         writeln!(f, "---------------------------------------------------")?;
-        // writeln!(f, "")?;
+
         for row in (0..8).rev() {
             write!(f, "{} ", row + 1)?;
+
             for col in 0..8 {
-                let index = (row * dimension) + col;
-                let cell = 1u64 << index;
-                let king = (cell & self.kings) != 0; // whether or not this piece is a king
-
-                let bp = (cell & self.south) != 0; // black piece (southern)
-                let wp = (cell & self.north) != 0; // white piece (northern)
-
-                let piece = match (bp, wp, king) {
-                    (true, false, false) => "B",
-                    (true, false, true) => "BK",
-                    (false, true, false) => "W",
-                    (false, true, true) => "WK",
-                    _ => "",
-                };
-
+                let is_dark = (row + col) % 2 == 0;
                 if col == 0 {
                     write!(f, "|")?;
                 }
-                write!(f, " {:^3} |", piece)?;
+
+                if is_dark {
+                    let cell = 1u32 << bit_index;
+
+                    let is_king = (self.kings & cell) != 0;
+                    let is_south = (self.south & cell) != 0;
+                    let is_north = (self.north & cell) != 0;
+
+                    let piece = match (is_south, is_north, is_king) {
+                        (true, false, false) => "B",
+                        (true, false, true) => "BK",
+                        (false, true, false) => "W",
+                        (false, true, true) => "WK",
+                        _ => "",
+                    };
+
+                    write!(f, " {:^3} |", piece)?;
+                    bit_index = bit_index.saturating_sub(1);
+                } else {
+                    write!(f, " {:^3} |", "")?;
+                }
             }
-            writeln!(f, "")?;
+
+            writeln!(f)?;
             writeln!(f, "---------------------------------------------------")?;
         }
+
         writeln!(f, "  |  A  |  B  |  C  |  D  |  E  |  F  |  G  |  H  | ")?;
         writeln!(f, "---------------------------------------------------")?;
 
         writeln!(f, "Turn: {:?}", self.turn)?;
-        write!(f, "Quiet moves: {:?}", self.qmvs)?;
-        writeln!(f, "checkers board")?;
-        writeln!(f, "South: {:0x}", self.south)?;
-        writeln!(f, "North: {:0x}", self.north)?;
-        writeln!(f, "Kings: {:0x}", self.kings)?;
-
+        writeln!(f, "Quiet moves: {:?}", self.qmvs)?;
+        writeln!(f, "South: {:08x}", self.south)?;
+        writeln!(f, "North: {:08x}", self.north)?;
+        writeln!(f, "Kings: {:08x}", self.kings)?;
         Ok(())
     }
 }
