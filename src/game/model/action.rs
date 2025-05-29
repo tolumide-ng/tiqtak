@@ -5,6 +5,8 @@ use wasm_bindgen::prelude::*;
 
 use crate::mcts::traits::Action as MctsAction;
 
+/// TODO: user provided form would be in u62, but when applied to the board, it has to be in u32 bitboard form
+/// 
 /// A specific move on the checkers board
 #[cfg_attr(feature = "web", wasm_bindgen)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

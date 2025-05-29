@@ -27,6 +27,9 @@ Available on [npm](https://www.npmjs.com/package/tiqtak) and [crates.io](https:/
 - [ ] More robust documentation
 - [ ] More tests
 - [ ] Migrate from using u64 to u32 for the board
+    - [ ] Accepts moves that use a u64 board (starts from bottom left, moves horizontally from left to right, and vertically from bottom to top)
+    - [ ] Internally transform the u64 moves format to u32 before applying it to the board. <br />
+    >> why?? this makes the moves easily readable and understandable by humans using translating the board moves
 - [ ] Fix releasing packages issue on github with (cross??)
 - [ ] Examples on how this works
 - [ ] Explain the architecture of this library

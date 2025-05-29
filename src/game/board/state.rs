@@ -139,7 +139,7 @@ impl Board {
     }
 
     /// This returns a new Board state (the new board state) after the move (ActionPath) is applied to the board
-    ///
+    /// Please always provide only u64 format of the action for valid plays
     #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn play(&self, action: ActionPath) -> Option<Self> {
         if !self.is_valid(action, self.turn) {

@@ -34,8 +34,8 @@ impl BitBoard {
     // const BOTTOM_LEFT_MV: u8 = 9;
     // const BOTTOM_RIGHT_MV: u8 = 7;
 
-    const LEFT: u32 = 0x11111111;
-    const RIGHT: u32 = 0x88888888;
+    const LEFT: u32 = 0x08080808;
+    const RIGHT: u32 = 0x10101010;
     const BOTTOM: u32 = 0x0000000F;
     const TOP: u32 = 0xF0000000;
 
@@ -343,6 +343,10 @@ mod tests {
 
     #[test]
     fn should_make_only_valid_moves() {
+        let xxx = 0x11200000;
+        let b = Board::with(xxx, 0, 0, Player::North, Qmvs::default());
+        println!("{}", b);
+
         let north = 0x11200000;
         let south = 0x26000;
 
