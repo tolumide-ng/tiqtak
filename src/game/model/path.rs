@@ -15,7 +15,7 @@ const LEN: usize = 12;
 /// use tiqtak::{Action, ActionPath};
 /// let mut mv = ActionPath::new(); // creates an empty
 /// mv.append(Action::new(8, 32, true, false)); // adds this to the mv list
-/// mv.prepend(Action::from((48, 32, true, false))); // Reserves the original order of the moves, but adds this as the first move, followed by the existing ones
+/// mv.prepend(Action::from((48, 32, true, false, true))); // Reserves the original order of the moves, but adds this as the first move, followed by the existing ones
 /// mv.append(Action::new(8, 2, false, true)); // append to the moves list
 /// // final path would look like 16(src) -> 48(src) -> 32(target) -> 8 -> 2
 /// ```

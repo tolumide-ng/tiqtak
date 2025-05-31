@@ -1,6 +1,6 @@
 use crate::game::model::player::Player;
 use crate::game::model::{action::Action, path::ActionPath};
-use crate::game::traits::u64_shift::U64Ext;
+use crate::game::traits::u32_shift::U32Ext;
 use crate::{Board, Qmvs};
 
 pub(crate) struct BitBoard {
@@ -39,17 +39,13 @@ impl BitBoard {
 
         let mut mvs = Vec::with_capacity(pcs.count_ones() as usize);
 
-        // let bb = Board::with(
-        //     self.current | self.team,
-        //     self.other,
-        //     0,
-        //     turn,
-        //     Qmvs::default(),
-        // );
-        // println!("the board here is \n{bb}");
+        // let bb = Board::with(pcs, 0, 0, turn, Qmvs::default());
+        // println!("the board here is \n{bb} \n >>>>>>");
 
         while pcs != 0 {
             let src = pcs.trailing_zeros() as u8;
+
+            // println!("the src here is !!!!!!!!!!!!!! {:?}", src);
             pcs &= pcs - 1;
 
             let mut tgt = (1 << src).shift_by(shift, turn);
@@ -71,6 +67,12 @@ impl BitBoard {
 
                 promoted =
                     (tgt.trailing_zeros() / Self::NUM_ROWS) == ((turn as u32) * Self::MAX_ROW);
+
+                // let idx = tgt.trailing_zeros();
+                // promoted = match turn {
+                //     Player::South => idx >= 28,
+                //     Player::North => idx < 4,
+                // };
 
                 let new_team = (self.current & !(1 << src)) | (self.team & !(1 << src)) | tgt;
                 capture = true;
@@ -106,7 +108,7 @@ impl BitBoard {
 
             let tgt = tgt.trailing_zeros() as u8;
 
-            println!("src {:?} {:?}", src, tgt);
+            // println!("src {:?} {:?}", src, tgt);
             promoted = (tgt / 8) == ((turn as u8) * 7);
             mvs.push(Action::from((src, tgt, capture, promoted, false)).into());
         }
@@ -144,15 +146,15 @@ impl BitBoard {
 
     fn bottom_right(&self) -> Vec<ActionPath> {
         let xx = self.get(Self::RIGHT, Self::BOTTOM_RIGHT_MV, Player::North);
-        println!("bottom_right");
-        for x in 0..xx.len() {
-            let ax = xx[x];
-            for act in 0..ax.len {
-                print!("{} -->> ", Action::from(ax[act]))
-            }
-            println!("||||");
-        }
-        println!("xx:::: {:?}", xx);
+        // println!("bottom_right");
+        // for x in 0..xx.len() {
+        //     let ax = xx[x];
+        //     for act in 0..ax.len {
+        //         print!("{} -->> ", Action::from(ax[act]))
+        //     }
+        //     println!("||||");
+        // }
+        // println!("xx:::: {:?}", xx);
         xx
     }
 
@@ -160,15 +162,15 @@ impl BitBoard {
     /// exclude the pieces already on row 1 (bottom row)
     pub(crate) fn bottom_left(&self) -> Vec<ActionPath> {
         let xx = self.get(Self::LEFT, Self::BOTTOM_LEFT_MV, Player::North);
-        println!("bottom_left");
-        for x in 0..xx.len() {
-            let ax = xx[x];
-            for act in 0..ax.len {
-                print!("{} -->> ", Action::from(ax[act]))
-            }
-            println!("||||");
-        }
-        println!("xx:::: {:?}", xx);
+        // println!("bottom_left");
+        // for x in 0..xx.len() {
+        //     let ax = xx[x];
+        //     for act in 0..ax.len {
+        //         print!("{} -->> ", Action::from(ax[act]))
+        //     }
+        //     println!("||||");
+        // }
+        // println!("xx:::: {:?}", xx);
         xx
     }
 
@@ -225,34 +227,38 @@ mod tests {
         let b = Board::with(xxx, 0, 0, Player::North, Qmvs::default());
         println!("{}", b);
 
-        let north = 0x11200000;
-        let south = 0x26000;
+        // let north = 0x11200000;
+        // let south = 0x26000;
+        let north = 1 << 22;
+        let south = 1 << 19;
 
         let board = Board::with(north, south, 0, Player::North, Qmvs::default());
         println!("{board}");
 
-        let received = board.options(Player::North);
+        assert!(false);
 
-        let expected = get_path(vec![
-            vec![(54u8, 47u8, false, false, true)],
-            vec![(45u8, 38u8, false, false, true)],
-        ]);
+        // let received = board.options(Player::North);
+
+        // let expected = get_path(vec![
+        //     vec![(54u8, 47u8, false, false, true)],
+        //     vec![(45u8, 38u8, false, false, true)],
+        // ]);
 
         // println!(
         //     ":first :::: : {:?}",
         //     getax(Action::from((54u8, 47u8, false, false)))
         // );
 
-        expected.iter().for_each(|x| {
-            let rr = received.iter().for_each(|a| {
-                let abx = Action::from(a[0]).transcode();
-                println!("the x here is {:?} {:?}", abx, abx.to_string());
-            });
-            assert!(received.contains(&x))
-        });
+        // expected.iter().for_each(|x| {
+        //     let rr = received.iter().for_each(|a| {
+        //         let abx = Action::from(a[0]).transcode();
+        //         println!("the x here is {:?} {:?}", abx, abx.to_string());
+        //     });
+        //     assert!(received.contains(&x))
+        // });
 
-        // expected.iter().for_each(|x| assert!(received.contains(&x)));
-        assert_eq!(received.len(), expected.len());
+        // // expected.iter().for_each(|x| assert!(received.contains(&x)));
+        // assert_eq!(received.len(), expected.len());
     }
 
     // #[test]

@@ -148,15 +148,21 @@ impl Board {
         let mut board = *self;
 
         for mv in &action.mvs[..action.len] {
+            let mut action = Action::from(*mv);
+
+            if action.is_u64 {
+                action = action.transcode();
+            }
+
             let Action {
                 src,
                 tgt,
                 capture,
                 promoted,
-                is_u64,
-            } = Action::from(*mv);
+                ..
+            } = action;
 
-            println!("is >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> u64 {}", is_u64);
+            // println!("is >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> u64 {}", tgt);
 
             let src_mask = 1 << src;
             let tgt_mask = 1 << tgt;
@@ -260,61 +266,9 @@ impl Index<Player> for Board {
     }
 }
 
-// impl std::fmt::Display for Board {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         let mut bit_index = 31u32;
-//         writeln!(f, "---------------------------------------------------")?;
-
-//         for row in (0..8).rev() {
-//             write!(f, "{} ", row + 1)?;
-
-//             for col in 0..8 {
-//                 let is_dark = (row + col) % 2 == 0;
-//                 if col == 0 {
-//                     write!(f, "|")?;
-//                 }
-
-//                 if is_dark {
-//                     let cell = 1u32 << bit_index;
-
-//                     let is_king = (self.kings & cell) != 0;
-//                     let is_south = (self.south & cell) != 0;
-//                     let is_north = (self.north & cell) != 0;
-
-//                     let piece = match (is_south, is_north, is_king) {
-//                         (true, false, false) => "B",
-//                         (true, false, true) => "BK",
-//                         (false, true, false) => "W",
-//                         (false, true, true) => "WK",
-//                         _ => "",
-//                     };
-
-//                     write!(f, " {:^3} |", piece)?;
-//                     bit_index = bit_index.saturating_sub(1);
-//                 } else {
-//                     write!(f, " {:^3} |", "")?;
-//                 }
-//             }
-
-//             writeln!(f)?;
-//             writeln!(f, "---------------------------------------------------")?;
-//         }
-
-//         writeln!(f, "  |  A  |  B  |  C  |  D  |  E  |  F  |  G  |  H  | ")?;
-//         writeln!(f, "---------------------------------------------------")?;
-
-//         writeln!(f, "Turn: {:?}", self.turn)?;
-//         writeln!(f, "Quiet moves: {:?}", self.qmvs)?;
-//         writeln!(f, "South: {:08x}", self.south)?;
-//         writeln!(f, "North: {:08x}", self.north)?;
-//         writeln!(f, "Kings: {:08x}", self.kings)?;
-//         Ok(())
-//     }
-// }
-
 impl std::fmt::Display for Board {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut bit_index = 31u32;
+        let rows = 8;
         writeln!(f, "---------------------------------------------------")?;
 
         for row in (0..8).rev() {
@@ -327,7 +281,12 @@ impl std::fmt::Display for Board {
                 }
 
                 if is_dark {
-                    let cell = 1u32 << bit_index;
+                    let cell_in64bits = (row * rows) + col;
+                    let cell_in32bits = cell_in64bits / 2;
+
+                    let cell = 1 << cell_in32bits;
+
+                    // let cell = 1u32 << bit_index;
 
                     let is_king = (self.kings & cell) != 0;
                     let is_south = (self.south & cell) != 0;
@@ -342,7 +301,6 @@ impl std::fmt::Display for Board {
                     };
 
                     write!(f, " {:^3} |", piece)?;
-                    bit_index = bit_index.saturating_sub(1);
                 } else {
                     write!(f, " {:^3} |", "")?;
                 }
