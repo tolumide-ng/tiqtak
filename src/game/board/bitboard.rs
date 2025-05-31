@@ -1,6 +1,7 @@
 use crate::game::model::player::Player;
 use crate::game::model::{action::Action, path::ActionPath};
 use crate::game::traits::u64_shift::U64Ext;
+use crate::{Board, Qmvs};
 
 pub(crate) struct BitBoard {
     current: u32,
@@ -8,32 +9,7 @@ pub(crate) struct BitBoard {
     team: u32,
 }
 
-mod chkrs32bits {
-    const LEFT: u32 = 0x11111111;
-    const RIGHT: u32 = 0x88888888;
-    const BOTTOM: u32 = 0x0000000F;
-    const TOP: u32 = 0xF0000000;
-
-    const SOUTH: u32 = 0x00000FFF;
-    const NORTH: u32 = 0xFFF00000;
-
-    const TOP_LEFT_MV: u8 = 4;
-    const TOP_RIGHT_MV: u8 = 5;
-    const BOTTOM_LEFT_MV: u8 = 5;
-    const BOTTOM_RIGHT_MV: u8 = 4;
-}
-
 impl BitBoard {
-    // const LEFT: u64 = 0x101010101010101;
-    // const RIGHT: u64 = 0x8080808080808080;
-    // const BOTTOM: u64 = 0xff;
-    // const TOP: u64 = 0xff00000000000000;
-
-    // const TOP_LEFT_MV: u8 = 7;
-    // const TOP_RIGHT_MV: u8 = 9;
-    // const BOTTOM_LEFT_MV: u8 = 9;
-    // const BOTTOM_RIGHT_MV: u8 = 7;
-
     const LEFT: u32 = 0x08080808;
     const RIGHT: u32 = 0x10101010;
     const BOTTOM: u32 = 0x0000000F;
@@ -62,6 +38,15 @@ impl BitBoard {
         let mut pcs = (!v_mask) & self.current & (!hor_mask);
 
         let mut mvs = Vec::with_capacity(pcs.count_ones() as usize);
+
+        // let bb = Board::with(
+        //     self.current | self.team,
+        //     self.other,
+        //     0,
+        //     turn,
+        //     Qmvs::default(),
+        // );
+        // println!("the board here is \n{bb}");
 
         while pcs != 0 {
             let src = pcs.trailing_zeros() as u8;
@@ -120,14 +105,19 @@ impl BitBoard {
             }
 
             let tgt = tgt.trailing_zeros() as u8;
+
+            println!("src {:?} {:?}", src, tgt);
             promoted = (tgt / 8) == ((turn as u8) * 7);
-            mvs.push(Action::from((src, tgt, capture, promoted)).into());
+            mvs.push(Action::from((src, tgt, capture, promoted, false)).into());
         }
 
         mvs
     }
 
     pub(crate) fn moves(&self, play_as: Player) -> Vec<ActionPath> {
+        // let b = Board::with(Self::BOTTOM, 0, 0, Player::North, Qmvs::default());
+        // println!("{}", b);
+
         let (mut left, right) = match play_as {
             Player::South => (self.top_left(), self.top_right()),
             Player::North => (self.bottom_left(), self.bottom_right()),
@@ -153,13 +143,33 @@ impl BitBoard {
     }
 
     fn bottom_right(&self) -> Vec<ActionPath> {
-        self.get(Self::RIGHT, Self::BOTTOM_RIGHT_MV, Player::North)
+        let xx = self.get(Self::RIGHT, Self::BOTTOM_RIGHT_MV, Player::North);
+        println!("bottom_right");
+        for x in 0..xx.len() {
+            let ax = xx[x];
+            for act in 0..ax.len {
+                print!("{} -->> ", Action::from(ax[act]))
+            }
+            println!("||||");
+        }
+        println!("xx:::: {:?}", xx);
+        xx
     }
 
     /// exclude the pieces already on column A (left column)
     /// exclude the pieces already on row 1 (bottom row)
     pub(crate) fn bottom_left(&self) -> Vec<ActionPath> {
-        self.get(Self::LEFT, Self::BOTTOM_LEFT_MV, Player::North)
+        let xx = self.get(Self::LEFT, Self::BOTTOM_LEFT_MV, Player::North);
+        println!("bottom_left");
+        for x in 0..xx.len() {
+            let ax = xx[x];
+            for act in 0..ax.len {
+                print!("{} -->> ", Action::from(ax[act]))
+            }
+            println!("||||");
+        }
+        println!("xx:::: {:?}", xx);
+        xx
     }
 
     pub(super) fn new(current: u32, other: u32, team: u32) -> Self {
@@ -207,6 +217,42 @@ mod tests {
                 )
             })
             .collect::<Vec<_>>()
+    }
+
+    #[test]
+    fn should_make_only_valid_moves() {
+        let xxx = 0x11200000;
+        let b = Board::with(xxx, 0, 0, Player::North, Qmvs::default());
+        println!("{}", b);
+
+        let north = 0x11200000;
+        let south = 0x26000;
+
+        let board = Board::with(north, south, 0, Player::North, Qmvs::default());
+        println!("{board}");
+
+        let received = board.options(Player::North);
+
+        let expected = get_path(vec![
+            vec![(54u8, 47u8, false, false, true)],
+            vec![(45u8, 38u8, false, false, true)],
+        ]);
+
+        // println!(
+        //     ":first :::: : {:?}",
+        //     getax(Action::from((54u8, 47u8, false, false)))
+        // );
+
+        expected.iter().for_each(|x| {
+            let rr = received.iter().for_each(|a| {
+                let abx = Action::from(a[0]).transcode();
+                println!("the x here is {:?} {:?}", abx, abx.to_string());
+            });
+            assert!(received.contains(&x))
+        });
+
+        // expected.iter().for_each(|x| assert!(received.contains(&x)));
+        assert_eq!(received.len(), expected.len());
     }
 
     // #[test]
@@ -340,41 +386,6 @@ mod tests {
     //         .iter()
     //         .for_each(|mv| assert!(received.contains(&mv)));
     // }
-
-    #[test]
-    fn should_make_only_valid_moves() {
-        let xxx = 0x11200000;
-        let b = Board::with(xxx, 0, 0, Player::North, Qmvs::default());
-        println!("{}", b);
-
-        let north = 0x11200000;
-        let south = 0x26000;
-
-        let board = Board::with(north, south, 0, Player::North, Qmvs::default());
-        println!("{board}");
-
-        let received = board.options(Player::North);
-
-        let expected = get_path(vec![
-            vec![(54u8, 47u8, false, false)],
-            vec![(45u8, 38u8, false, false)],
-        ]);
-
-        // println!(
-        //     ":first :::: : {:?}",
-        //     getax(Action::from((54u8, 47u8, false, false)))
-        // );
-
-        expected.iter().for_each(|x| {
-            let rr = received.iter().for_each(|a| {
-                println!("the x here is {:?}", Action::from(a[0]));
-            });
-            assert!(received.contains(&x))
-        });
-
-        // expected.iter().for_each(|x| assert!(received.contains(&x)));
-        assert_eq!(received.len(), expected.len());
-    }
 
     // #[test]
     // fn a_king_should_never_overwrite_its_teammates() {

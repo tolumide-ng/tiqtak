@@ -72,5 +72,6 @@ pub fn getax(a: Action) -> Action {
         tgt,
         capture: a.capture,
         promoted: a.promoted,
+        is_u64: !a.is_u64,
     }
 }
