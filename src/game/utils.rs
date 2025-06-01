@@ -27,6 +27,21 @@ pub struct Qmvs {
     pub(crate) south: u8,
 }
 
+impl Qmvs {
+    pub(crate) fn new() -> Self {
+        Self::default()
+    }
+
+    pub(crate) fn inc(&mut self, turn: Player) {
+        self[turn] += 1;
+    }
+
+    pub(crate) fn zero(&mut self) {
+        self.north = 0;
+        self.south = 0;
+    }
+}
+
 impl Index<Player> for Qmvs {
     type Output = u8;
 

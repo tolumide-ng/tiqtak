@@ -1,19 +1,19 @@
 use crate::game::model::player::Player;
 use crate::game::model::{action::Action, path::ActionPath};
 use crate::game::traits::u32_shift::U32Ext;
-use crate::{Board, Qmvs};
+// use crate::{Board, Qmvs};
 
 pub(crate) struct BitBoard {
-    current: u32,
-    other: u32,
-    team: u32,
+    pub(super) current: u32,
+    pub(super) other: u32,
+    pub(super) team: u32,
 }
 
 impl BitBoard {
     const LEFT: u32 = 0x08080808;
     const RIGHT: u32 = 0x10101010;
-    const BOTTOM: u32 = 0x0000000F;
-    const TOP: u32 = 0xF0000000;
+    pub(crate) const BOTTOM: u32 = 0x0000000F;
+    pub(crate) const TOP: u32 = 0xF0000000;
 
     const TOP_LEFT_MV: u8 = 4;
     const TOP_RIGHT_MV: u8 = 5;
@@ -25,6 +25,11 @@ impl BitBoard {
     /// On a 0 indexed board (first row as 0), the last row on the board is 7
     /// Yes, there are 8 rows, but its 0 indexed
     const MAX_ROW: u32 = 7;
+
+    const L3_MASK: u32 = 0xE0E0E0E;
+    const L5_MASK: u32 = 0x707070;
+    const R3_MASK: u32 = 0x70707070;
+    const R5_MASK: u32 = 0xE0E0E00;
 
     // hor_mask: horizontal mask
     fn get(&self, hor_mask: u32, shift: u8, turn: Player) -> Vec<ActionPath> {
@@ -146,6 +151,7 @@ impl BitBoard {
 
     fn bottom_right(&self) -> Vec<ActionPath> {
         let xx = self.get(Self::RIGHT, Self::BOTTOM_RIGHT_MV, Player::North);
+        // let abc = self.get(Self::RIGHT, Coord::SouthWest.shamt(row), turn)
         // println!("bottom_right");
         // for x in 0..xx.len() {
         //     let ax = xx[x];
@@ -221,45 +227,45 @@ mod tests {
             .collect::<Vec<_>>()
     }
 
-    #[test]
-    fn should_make_only_valid_moves() {
-        let xxx = 0x11200000;
-        let b = Board::with(xxx, 0, 0, Player::North, Qmvs::default());
-        println!("{}", b);
+    // #[test]
+    // fn should_make_only_valid_moves() {
+    //     let xxx = 0x11200000;
+    //     let b = Board::with(xxx, 0, 0, Player::North, Qmvs::default());
+    //     println!("{}", b);
 
-        // let north = 0x11200000;
-        // let south = 0x26000;
-        let north = 1 << 22;
-        let south = 1 << 19;
+    //     // let north = 0x11200000;
+    //     // let south = 0x26000;
+    //     let north = 1 << 22;
+    //     let south = 1 << 19;
 
-        let board = Board::with(north, south, 0, Player::North, Qmvs::default());
-        println!("{board}");
+    //     let board = Board::with(north, south, 0, Player::North, Qmvs::default());
+    //     println!("{board}");
 
-        assert!(false);
+    //     assert!(false);
 
-        // let received = board.options(Player::North);
+    //     // let received = board.options(Player::North);
 
-        // let expected = get_path(vec![
-        //     vec![(54u8, 47u8, false, false, true)],
-        //     vec![(45u8, 38u8, false, false, true)],
-        // ]);
+    //     // let expected = get_path(vec![
+    //     //     vec![(54u8, 47u8, false, false, true)],
+    //     //     vec![(45u8, 38u8, false, false, true)],
+    //     // ]);
 
-        // println!(
-        //     ":first :::: : {:?}",
-        //     getax(Action::from((54u8, 47u8, false, false)))
-        // );
+    //     // println!(
+    //     //     ":first :::: : {:?}",
+    //     //     getax(Action::from((54u8, 47u8, false, false)))
+    //     // );
 
-        // expected.iter().for_each(|x| {
-        //     let rr = received.iter().for_each(|a| {
-        //         let abx = Action::from(a[0]).transcode();
-        //         println!("the x here is {:?} {:?}", abx, abx.to_string());
-        //     });
-        //     assert!(received.contains(&x))
-        // });
+    //     // expected.iter().for_each(|x| {
+    //     //     let rr = received.iter().for_each(|a| {
+    //     //         let abx = Action::from(a[0]).transcode();
+    //     //         println!("the x here is {:?} {:?}", abx, abx.to_string());
+    //     //     });
+    //     //     assert!(received.contains(&x))
+    //     // });
 
-        // // expected.iter().for_each(|x| assert!(received.contains(&x)));
-        // assert_eq!(received.len(), expected.len());
-    }
+    //     // // expected.iter().for_each(|x| assert!(received.contains(&x)));
+    //     // assert_eq!(received.len(), expected.len());
+    // }
 
     // #[test]
     // fn should_return_all_possible_moves_for_south_player() {

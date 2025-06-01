@@ -52,3 +52,4 @@ Available on [npm](https://www.npmjs.com/package/tiqtak) and [crates.io](https:/
 ### Credit:
 1. [Monte Carlo Tree Search – beginners guide](https://int8.io/monte-carlo-tree-search-beginners-guide/)
 2. [Monte-Carlo Tree Search (MCTS)](https://gibberblot.github.io/rl-notes/single-agent/mcts.html)
+3. [Checkers Bitboard Tutorial](https://3dkingdoms.com/checkers/bitboards.htm) adopted for the 32bits migration of the bitboard used for this application
