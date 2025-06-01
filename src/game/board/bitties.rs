@@ -115,10 +115,7 @@ impl Bitty {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        convert64bits_to_32bits::getax,
-        game::{board::state::Board, utils::Qmvs},
-    };
+    use crate::game::{board::state::Board, utils::Qmvs};
 
     use super::*;
 
@@ -141,13 +138,7 @@ mod tests {
     }
 
     #[test]
-    fn should_make_only_valid_moves() {
-        let xxx = 0x11200000;
-        let b = Board::with(xxx, 0, 0, Player::North, Qmvs::default());
-        println!("{}", b);
-
-        // let north = 0x11200000;
-        // let south = 0x26000;
+    fn should_make_return_valid_moves_for_simple_pieces() {
         let north = 1 << 22;
         let south = 1 << 19;
 
@@ -155,36 +146,35 @@ mod tests {
         println!("{bb}");
 
         let board = Bitty::new(north, 0, south, 0);
-        let mvs = board.get_mvs(Player::North);
+        let received = board.get_mvs(Player::North);
 
-        mvs.iter().for_each(|path| {
+        received.iter().for_each(|path| {
             for i in 0..path.len {
                 let act = Action::from(path[i]);
-                println!("xx >>> {}", act);
+                println!("abc sssss {:?}", act);
+                println!("xx >>> {} \n\n", act);
             }
         });
 
-        assert!(false);
-
         // let received = board.options(Player::North);
 
-        // let expected = get_path(vec![
-        //     vec![(54u8, 47u8, false, false, true)],
-        //     vec![(45u8, 38u8, false, false, true)],
-        // ]);
+        let expected = get_path(vec![
+            vec![(22u8, 26u8, false, false, true)],
+            vec![(22u8, 27u8, false, false, true)],
+        ]);
 
-        // println!(
-        //     ":first :::: : {:?}",
-        //     getax(Action::from((54u8, 47u8, false, false)))
-        // );
+        assert_eq!(expected.len(), received.len());
 
-        // expected.iter().for_each(|x| {
-        //     let rr = received.iter().for_each(|a| {
-        //         let abx = Action::from(a[0]).transcode();
-        //         println!("the x here is {:?} {:?}", abx, abx.to_string());
-        //     });
-        //     assert!(received.contains(&x))
-        // });
+        println!("received:: {:?}", received);
+        println!("expected:: {:?}", expected);
+
+        expected.iter().for_each(|x| {
+            // let rr = received.iter().for_each(|a| {
+            //     let abx = Action::from(a[0]).transcode();
+            //     println!("the x here is {:?} {:?}", abx, abx.to_string());
+            // });
+            assert!(received.contains(&x))
+        });
 
         // // expected.iter().for_each(|x| assert!(received.contains(&x)));
         // assert_eq!(received.len(), expected.len());

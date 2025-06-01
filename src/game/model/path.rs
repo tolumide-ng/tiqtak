@@ -43,7 +43,7 @@ impl ActionPath {
         Self {
             mvs: [0u16; LEN],
             len: 0,
-            is_u64: true,
+            is_u64: false,
         }
     }
 
