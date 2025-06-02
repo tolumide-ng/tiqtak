@@ -67,11 +67,7 @@ pub fn getax(a: Action) -> Action {
     let src = convert_64_to_32(a.src).unwrap();
     let tgt = convert_64_to_32(a.tgt).unwrap();
 
-    Action {
-        src,
-        tgt,
-        capture: a.capture,
-        promoted: a.promoted,
-        is_u64: !a.is_u64,
-    }
+    let xx = Action::from((src, tgt, a.capture, a.promoted, a.scale));
+
+    Action::new(src, tgt, a.capture, a.promoted, !a.scale)
 }

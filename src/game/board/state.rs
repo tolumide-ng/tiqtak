@@ -16,6 +16,8 @@ use crate::{
     },
 };
 
+use super::scale::Scale;
+
 #[cfg_attr(feature = "web", wasm_bindgen)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
@@ -150,7 +152,7 @@ impl Board {
         for mv in &action.mvs[..action.len] {
             let mut action = Action::from(*mv);
 
-            if action.is_u64 {
+            if action.scale == Scale::U64 {
                 action = action.transcode();
             }
 

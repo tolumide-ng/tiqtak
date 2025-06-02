@@ -1,5 +1,7 @@
 use crate::{Action, ActionPath, Board, Player, Qmvs, game::model::bits::Bits};
 
+use super::scale::Scale;
+
 struct Bitty {
     /// The current bit(s) that would be playing (for which we should get moves)
     current: u32,
@@ -30,7 +32,7 @@ impl Bitty {
         }
     }
 
-    fn get_mvs(&self, turn: Player) -> Vec<ActionPath> {
+    pub(crate) fn get_mvs(&self, turn: Player) -> Vec<ActionPath> {
         // we would eventually change this such that bitboard contains -> north, south, kings only
         let empty = !(self.current | self.team | self.opponent | self.kings);
 
@@ -41,72 +43,92 @@ impl Bitty {
             let is_king = (src_mask & self.kings) != 0;
 
             // normal moves
-            let directions: Vec<i8> = match turn {
-                Player::North if is_king => vec![4, 5, -4, -5],
-                Player::North if !is_king => vec![4, 5],
-                Player::South if is_king => vec![-4, -5, 4, 5],
-                Player::South if !is_king => vec![-4, -5],
-                _ => vec![],
-            };
+            // let directions: Vec<i8> = match turn {
+            //     Player::South if is_king => vec![4, 5, -4, -5],
+            //     Player::South if !is_king => vec![4, 5],
+            //     Player::North if is_king => vec![-4, -5, 4, 5],
+            //     Player::North if !is_king => vec![-4, -5],
+            //     _ => vec![],
+            // };
+            // // let directions: Vec<i8> = match turn {
+            // //     Player::North if is_king => vec![4, 5, -4, -5],
+            // //     Player::North if !is_king => vec![4, 5],
+            // //     Player::South if is_king => vec![-4, -5, 4, 5],
+            // //     Player::South if !is_king => vec![-4, -5],
+            // //     _ => vec![],
+            // // };
 
-            for &dir in &directions {
-                let tgt = src as i8 + dir;
-                if tgt >= 0 && tgt < 32 {
-                    let to_mask = 1 << tgt as u8;
-                    if (to_mask & empty) != 0 {
-                        let tgt = tgt as u8;
-                        mvs.push(
-                            Action::new_32(src, tgt, false, self.is_promotion(turn, tgt)).into(),
-                        );
-                    }
-                }
-            }
+            // for &dir in &directions {
+            //     let tgt = src as i8 + dir;
+            //     if tgt >= 0 && tgt < 32 {
+            //         let to_mask = 1 << tgt as u8;
+            //         if (to_mask & empty) != 0 {
+            //             let tgt = tgt as u8;
+            //             mvs.push(
+            //                 Action::new(src, tgt, false, self.is_promotion(turn, tgt), Scale::U32)
+            //                     .into(),
+            //             );
+            //         }
+            //     }
+            // }
 
-            let jump_dirs = match turn {
-                Player::North if is_king => vec![(4, 8), (5, 10), (-4, -8), (-5, -10)],
-                Player::North if !is_king => vec![(4, 8), (5, 10)],
-                Player::South if is_king => vec![(-4, -8), (-5, -10), (4, 8), (5, 10)],
-                Player::North if !is_king => vec![(-4, -8), (-5, -10)],
-                _ => vec![],
-            };
+            // // let jump_dirs = match turn {
+            // //     Player::North if is_king => vec![(4, 8), (5, 10), (-4, -8), (-5, -10)],
+            // //     Player::North if !is_king => vec![(4, 8), (5, 10)],
+            // //     Player::South if is_king => vec![(-4, -8), (-5, -10), (4, 8), (5, 10)],
+            // //     Player::South if !is_king => vec![(-4, -8), (-5, -10)],
+            // //     _ => vec![],
+            // // };
 
-            for &(cp, to) in &jump_dirs {
-                let capture = src as i8 + cp;
-                let tgt = src as i8 + to;
-                let valid_range = 0..32;
+            // let jump_dirs = match turn {
+            //     Player::South if is_king => vec![(4, 8), (5, 10), (-4, -8), (-5, -10)],
+            //     Player::South if !is_king => vec![(4, 8), (5, 10)],
+            //     Player::North if is_king => vec![(-4, -8), (-5, -10), (4, 8), (5, 10)],
+            //     Player::North if !is_king => vec![(-4, -8), (-5, -10)],
+            //     _ => vec![],
+            // };
 
-                if valid_range.contains(&capture) && valid_range.contains(&tgt) {
-                    let capture_mask = 1 << capture;
-                    let tgt_mask = 1 << tgt;
+            // for &(cp, to) in &jump_dirs {
+            //     let capture = src as i8 + cp;
+            //     let tgt = src as i8 + to;
+            //     let valid_range = 0..32;
 
-                    if (capture_mask & self.opponent) != 0 && (tgt_mask & empty) != 0 {
-                        let tgt = tgt as u8;
-                        let promoted = self.is_promotion(turn, tgt);
+            //     if valid_range.contains(&capture) && valid_range.contains(&tgt) {
+            //         let capture_mask = 1 << capture;
+            //         let tgt_mask = 1 << tgt;
+            //         println!(
+            //             "----------------------------------------_______>>>>>>>>>>>src : {src} || capture: {capture} tgt: {tgt} \n {:#0b} {:#0b} ",
+            //             capture_mask, tgt_mask
+            //         );
 
-                        let parent = Action::new_32(src, tgt, true, promoted);
+            //         if (capture_mask & self.opponent) != 0 && (tgt_mask & empty) != 0 {
+            //             let tgt = tgt as u8;
+            //             let promoted = self.is_promotion(turn, tgt);
 
-                        let curr = 1 << tgt;
-                        let team = self.team | (self.current & !(1 << src));
-                        let opp = self.opponent & !(1 << capture);
-                        let kings =
-                            self.kings & !(1 << src) | ((is_king || promoted) as u32) << tgt;
+            //             let parent = Action::new(src, tgt, true, promoted, Scale::U32);
 
-                        let nb = Bitty::new(curr, team, opp, kings);
-                        let mut result = nb.get_mvs(turn);
+            //             let curr = 1 << tgt;
+            //             let team = self.team | (self.current & !(1 << src));
+            //             let opp = self.opponent & !(1 << capture);
+            //             let kings =
+            //                 self.kings & !(1 << src) | ((is_king || promoted) as u32) << tgt;
 
-                        result.retain_mut(|path| {
-                            if matches!(path.peek(path.len -1), Some(act) if act.capture) {
-                                path.prepend(parent);
-                                return true;
-                            };
-                            return false;
-                        });
+            //             let nb = Bitty::new(curr, team, opp, kings);
+            //             let mut result = nb.get_mvs(turn);
 
-                        mvs.reserve(result.len());
-                        mvs.extend(result);
-                    }
-                }
-            }
+            //             result.retain_mut(|path| {
+            //                 if matches!(path.peek(path.len -1), Some(act) if act.capture) {
+            //                     path.prepend(parent).unwrap();
+            //                     return true;
+            //                 };
+            //                 return false;
+            //             });
+
+            //             mvs.reserve(result.len());
+            //             mvs.extend(result);
+            //         }
+            //     }
+            // }
         }
 
         mvs
@@ -127,12 +149,13 @@ mod tests {
         input
             .into_iter()
             .map(|a| {
-                ActionPath::from(
+                ActionPath::try_from(
                     a.iter()
                         .map(|ac| Action::from(*ac).into())
                         .collect::<Vec<u16>>()
                         .as_slice(),
                 )
+                .unwrap()
             })
             .collect::<Vec<_>>()
     }
@@ -143,7 +166,11 @@ mod tests {
         let south = 1 << 19;
 
         let bb = Board::with(north, south, 0, Player::North, Qmvs::default());
+        // let bb = Board::new();
         println!("{bb}");
+
+        // let board = Bitty::new(south, 0, north, 0);
+        // let received = board.get_mvs(Player::South);
 
         let board = Bitty::new(north, 0, south, 0);
         let received = board.get_mvs(Player::North);

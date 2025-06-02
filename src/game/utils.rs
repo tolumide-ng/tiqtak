@@ -14,6 +14,10 @@ use super::model::player::Player;
 pub enum ApiError {
     #[error("Illegal move")]
     IllegalMove,
+    #[error("Actions must be representative of the same board type, either u32 or u64")]
+    IncompatibleActions,
+    #[error("Too many actions")]
+    TooManyActions,
 }
 
 impl MCTSError for ApiError {}

@@ -44,79 +44,79 @@ impl BitBoard {
 
         let mut mvs = Vec::with_capacity(pcs.count_ones() as usize);
 
-        // let bb = Board::with(pcs, 0, 0, turn, Qmvs::default());
-        // println!("the board here is \n{bb} \n >>>>>>");
+        // // let bb = Board::with(pcs, 0, 0, turn, Qmvs::default());
+        // // println!("the board here is \n{bb} \n >>>>>>");
 
-        while pcs != 0 {
-            let src = pcs.trailing_zeros() as u8;
+        // while pcs != 0 {
+        //     let src = pcs.trailing_zeros() as u8;
 
-            // println!("the src here is !!!!!!!!!!!!!! {:?}", src);
-            pcs &= pcs - 1;
+        //     // println!("the src here is !!!!!!!!!!!!!! {:?}", src);
+        //     pcs &= pcs - 1;
 
-            let mut tgt = (1 << src).shift_by(shift, turn);
-            let mut capture = false;
-            let mut promoted = false;
+        //     let mut tgt = (1 << src).shift_by(shift, turn);
+        //     let mut capture = false;
+        //     let mut promoted = false;
 
-            let self_on_target = ((self.current | self.team) & tgt) != 0;
-            let enemy_on_target = self.other & tgt != 0;
-            let valid_capture = ((tgt & !v_mask & !hor_mask) != 0)
-                && ((tgt.shift_by(shift, turn)) & (self.current | self.other | self.team) == 0); // ensures landing(jumping target) space is empty
+        //     let self_on_target = ((self.current | self.team) & tgt) != 0;
+        //     let enemy_on_target = self.other & tgt != 0;
+        //     let valid_capture = ((tgt & !v_mask & !hor_mask) != 0)
+        //         && ((tgt.shift_by(shift, turn)) & (self.current | self.other | self.team) == 0); // ensures landing(jumping target) space is empty
 
-            if self_on_target || (enemy_on_target && !valid_capture) {
-                continue;
-            }
+        //     if self_on_target || (enemy_on_target && !valid_capture) {
+        //         continue;
+        //     }
 
-            if enemy_on_target && valid_capture {
-                let new_others = self.other & !tgt;
-                tgt = tgt.shift_by(shift, turn);
+        //     if enemy_on_target && valid_capture {
+        //         let new_others = self.other & !tgt;
+        //         tgt = tgt.shift_by(shift, turn);
 
-                promoted =
-                    (tgt.trailing_zeros() / Self::NUM_ROWS) == ((turn as u32) * Self::MAX_ROW);
+        //         promoted =
+        //             (tgt.trailing_zeros() / Self::NUM_ROWS) == ((turn as u32) * Self::MAX_ROW);
 
-                // let idx = tgt.trailing_zeros();
-                // promoted = match turn {
-                //     Player::South => idx >= 28,
-                //     Player::North => idx < 4,
-                // };
+        //         // let idx = tgt.trailing_zeros();
+        //         // promoted = match turn {
+        //         //     Player::South => idx >= 28,
+        //         //     Player::North => idx < 4,
+        //         // };
 
-                let new_team = (self.current & !(1 << src)) | (self.team & !(1 << src)) | tgt;
-                capture = true;
+        //         let new_team = (self.current & !(1 << src)) | (self.team & !(1 << src)) | tgt;
+        //         capture = true;
 
-                let kings = (promoted as u32) * tgt;
+        //         let kings = (promoted as u32) * tgt;
 
-                let board = BitBoard::new(tgt, new_others, new_team);
+        //         let board = BitBoard::new(tgt, new_others, new_team);
 
-                let parent = Action::new(src, tgt.trailing_zeros() as u8, capture, promoted);
+        //         let parent = Action::new(src, tgt.trailing_zeros() as u8, capture, promoted);
 
-                let result = board.moves(turn);
-                result.into_iter().for_each(|mut actions| {
-                    if let Some(act) = actions.peek(actions.len - 1) {
-                        if act.capture {
-                            actions.prepend(parent);
-                            mvs.push(actions);
-                        }
-                    }
-                });
+        //         let result = board.moves(turn);
+        //         result.into_iter().for_each(|mut actions| {
+        //             if let Some(act) = actions.peek(actions.len - 1) {
+        //                 if act.capture {
+        //                     actions.prepend(parent);
+        //                     mvs.push(actions);
+        //                 }
+        //             }
+        //         });
 
-                (kings != 0).then(|| {
-                    let more = board.moves(!turn);
-                    more.into_iter().for_each(|mut actions| {
-                        if let Some(act) = actions.peek(actions.len - 1) {
-                            if act.capture {
-                                actions.prepend(parent);
-                                mvs.push(actions);
-                            }
-                        }
-                    });
-                });
-            }
+        //         (kings != 0).then(|| {
+        //             let more = board.moves(!turn);
+        //             more.into_iter().for_each(|mut actions| {
+        //                 if let Some(act) = actions.peek(actions.len - 1) {
+        //                     if act.capture {
+        //                         actions.prepend(parent);
+        //                         mvs.push(actions);
+        //                     }
+        //                 }
+        //             });
+        //         });
+        //     }
 
-            let tgt = tgt.trailing_zeros() as u8;
+        //     let tgt = tgt.trailing_zeros() as u8;
 
-            // println!("src {:?} {:?}", src, tgt);
-            promoted = (tgt / 8) == ((turn as u8) * 7);
-            mvs.push(Action::from((src, tgt, capture, promoted, false)).into());
-        }
+        //     // println!("src {:?} {:?}", src, tgt);
+        //     promoted = (tgt / 8) == ((turn as u8) * 7);
+        //     mvs.push(Action::from((src, tgt, capture, promoted, false)).into());
+        // }
 
         mvs
     }
@@ -209,23 +209,23 @@ mod tests {
 
     use super::*;
 
-    fn get_path<T>(input: Vec<Vec<T>>) -> Vec<ActionPath>
-    where
-        Action: From<T>,
-        T: Copy,
-    {
-        input
-            .into_iter()
-            .map(|a| {
-                ActionPath::from(
-                    a.iter()
-                        .map(|ac| Action::from(*ac).into())
-                        .collect::<Vec<u16>>()
-                        .as_slice(),
-                )
-            })
-            .collect::<Vec<_>>()
-    }
+    // fn get_path<T>(input: Vec<Vec<T>>) -> Vec<ActionPath>
+    // where
+    //     Action: From<T>,
+    //     T: Copy,
+    // {
+    //     input
+    //         .into_iter()
+    //         .map(|a| {
+    //             ActionPath::from(
+    //                 a.iter()
+    //                     .map(|ac| Action::from(*ac).into())
+    //                     .collect::<Vec<u16>>()
+    //                     .as_slice(),
+    //             )
+    //         })
+    //         .collect::<Vec<_>>()
+    // }
 
     // #[test]
     // fn should_make_only_valid_moves() {
