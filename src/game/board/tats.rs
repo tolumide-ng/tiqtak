@@ -1,4 +1,6 @@
-use crate::Board;
+use crate::{Action, Board, game::model::bits::Bits};
+
+use super::scale::Scale;
 
 impl Board {
     const L3_MASK: u32 = 0xE0E0E0E;
@@ -6,73 +8,91 @@ impl Board {
     const R3_MASK: u32 = 0x70707070;
     const R5_MASK: u32 = 0xE0E0E00;
 
-    pub(crate) fn white_movers(&self) -> u32 {
+    const ROW_8_MASK: u32 = 1 << 28 | 1 << 29 | 1 << 30 | 1 << 31;
+
+    pub(crate) fn white_movers(&self) -> Vec<Action> {
         let empty = !(self.north | self.south);
         let wk = self.north & self.kings;
 
-        let mut movers = (empty << 4) & self.north;
-        movers |= ((empty & Self::L3_MASK) << 3) & self.north;
-        movers |= ((empty & Self::L5_MASK) << 5) & self.north;
+        let mut mvs = vec![];
 
-        if wk != 0 {
-            movers |= (empty >> 4) & wk;
-            movers |= ((empty & Self::R3_MASK) >> 3) & wk;
-            movers |= ((empty & Self::R5_MASK) >> 5) & wk;
+        for src in Bits::new((empty << 4) & self.north) {
+            mvs.push(Action::new(src, src + 4, false, false, Scale::U32));
         }
 
-        movers
-        // let empty = !(self.north | self.south);
-        // let wk = self.north & self.kings;
+        for src in Bits::new(((empty & Self::L3_MASK) << 3) & self.north) {
+            mvs.push(Action::new(src, src + 3, false, false, Scale::U32));
+        }
 
-        // let mut movers = 0;
+        for src in Bits::new(((empty & Self::L5_MASK) << 5) & self.north) {
+            mvs.push(Action::new(src, src + 3, false, false, Scale::U32));
+        }
 
-        // let mut temp = (empty << 4) & self.south;
-        // if temp != 0 {
-        //     movers |= (((temp & Self::L3_MASK) << 3) | ((temp & Self::L5_MASK) << 5)) & self.north;
-        // }
+        if wk != 0 {
+            Bits::new((empty >> 4) & wk)
+                .into_iter()
+                .for_each(|src| mvs.push(Action::new(src, src - 4, false, false, Scale::U32)));
 
-        // temp = (((empty & Self::L3_MASK) << 3) | ((empty & Self::L5_MASK) << 5)) & self.south;
-        // movers |= (temp << 4) & self.north;
+            Bits::new(((empty & Self::R3_MASK) >> 3) & wk)
+                .into_iter()
+                .for_each(|src| mvs.push(Action::new(src, src - 3, false, false, Scale::U32)));
 
-        // if self.north != 0 {
-        //     temp = (empty >> 4) & self.north;
-        //     if temp != 0 {
-        //         movers |= (((temp & Self::R3_MASK) >> 3) | ((temp & Self::R5_MASK) >> 5)) & wk;
-        //     }
-        //     temp = (((empty & Self::R3_MASK) >> 3) | ((empty & Self::R5_MASK) >> 5)) & self.south;
-        //     if temp != 0 {
-        //         movers |= (temp >> 4) & self.north;
-        //     }
-        // }
+            Bits::new(((empty & Self::R5_MASK) >> 5) & wk)
+                .into_iter()
+                .for_each(|src| mvs.push(Action::new(src, src - 3, false, false, Scale::U32)));
+        }
 
-        // movers
+        return mvs;
     }
 
-    pub(crate) fn white_jumpers(&self) -> u32 {
+    pub(crate) fn white_jumpers(&self) -> Vec<Action> {
         let empty = !(self.north | self.south);
         let wk = self.north & self.kings;
+        let mut mvs = Vec::new();
 
         let mut movers = 0;
-        let mut temp = (empty << 4) & self.south;
-        if temp != 0 {
-            movers |= (((temp & Self::L3_MASK) << 3) | ((temp & Self::L5_MASK) << 5)) & self.north;
+        let temp = (empty << 4) & self.south;
+
+        let jump = (((temp & Self::L3_MASK) << 3) | ((temp & Self::L5_MASK) << 5)) & self.north;
+        for src in Bits::new(jump) {
+            let up = ((Self::L3_MASK >> src) & 1) != 0;
+            let dir = if up { 3 } else { 5 };
+            let tgt = src + dir + 4;
+            let promoted = (1 << tgt & Self::ROW_8_MASK) != 0;
+            mvs.push(Action::new(src, tgt, true, promoted, Scale::U32));
         }
 
-        temp = (((empty & Self::L3_MASK) << 3) | ((empty & Self::L5_MASK) << 5)) & self.south;
-        movers |= (temp << 4) & self.north;
+        let temp = (((empty & Self::L3_MASK) << 3) | ((empty & Self::L5_MASK) << 5)) & self.south;
+        for src in Bits::new((temp << 4) & self.north) {
+            let left = (Self::L3_MASK >> (src - 4)) & 1 != 0;
+            let dir = if left { 3 } else { 5 };
+            let tgt = src + dir + 4;
+            let promoted = (1 << tgt & Self::ROW_8_MASK) != 0;
+            mvs.push(Action::new(src, tgt, true, promoted, Scale::U32));
+        }
 
         if wk != 0 {
-            temp = (empty >> 4) & self.south;
-            if temp != 0 {
-                movers |= (((temp & Self::R3_MASK) >> 3) | ((temp & Self::R5_MASK) >> 5)) & wk;
+            let temp = (empty >> 4) & self.south;
+            let jump = (((temp & Self::R3_MASK) >> 3) | ((temp & Self::R5_MASK) >> 5)) & wk;
+            for src in Bits::new(jump) {
+                let right = (Self::R3_MASK >> src) & 1 != 0;
+                let dir = if right { 3 } else { 5 };
+                let tgt = src - (dir + 4);
+                mvs.push(Action::new(src, tgt, true, true, Scale::U32));
             }
-            temp = (((empty & Self::R3_MASK) >> 3) | ((empty & Self::R5_MASK) >> 5)) & self.south;
-            if temp != 0 {
-                movers |= (temp >> 4) & wk;
+            let temp =
+                (((empty & Self::R3_MASK) >> 3) | ((empty & Self::R5_MASK) >> 5)) & self.south;
+            for src in Bits::new((temp >> 4) & wk) {
+                let right = (Self::R3_MASK >> (src + 4)) & 1 != 0;
+                let dir = if right { 3 } else { 5 };
+                let tgt = src - (4 + dir);
+                mvs.push(Action::new(src, tgt, true, true, Scale::U32));
             }
         }
-        movers
+        mvs
     }
+
+    fn get(&self) {}
 }
 
 #[cfg(test)]
@@ -126,11 +146,11 @@ mod tests {
 
         let received = bb.white_jumpers();
 
-        println!(
-            "the received ones [[[[[[[[[[[[[[[[[[[[[[[[[[[[------------]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]] {} \n {} \n",
-            received,
-            Board::with(received, 0, 0, Player::North, Qmvs::default())
-        );
+        // println!(
+        //     "the received ones [[[[[[[[[[[[[[[[[[[[[[[[[[[[------------]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]] {} \n {} \n",
+        //     received,
+        //     Board::with(received, 0, 0, Player::North, Qmvs::default())
+        // );
 
         assert!(false);
 

@@ -2,6 +2,12 @@ use crate::{Player, game::traits::u32_shift::U32Ext};
 
 pub struct Bits(u32);
 
+impl Bits {
+    pub(crate) fn new(n: u32) -> Self {
+        Self(n)
+    }
+}
+
 impl AsRef<u32> for Bits {
     fn as_ref(&self) -> &u32 {
         &self.0
