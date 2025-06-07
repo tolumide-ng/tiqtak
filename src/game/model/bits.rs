@@ -1,5 +1,6 @@
 use crate::{Player, game::traits::u32_shift::U32Ext};
 
+#[derive(Debug, Default)]
 pub struct Bits(u32);
 
 impl Bits {

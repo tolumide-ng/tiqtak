@@ -47,6 +47,9 @@ impl Player {
     const R3_MASK: u32 = 0x70707070;
     const R5_MASK: u32 = 0xE0E0E00;
 
+    const ROW_8_MASK: u32 = 1 << 28 | 1 << 29 | 1 << 30 | 1 << 31;
+    const ROW_1_MASK: u32 = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3;
+
     /// side 3 mask
     pub(crate) const fn s3_mask(&self) -> u32 {
         match self {
@@ -60,6 +63,13 @@ impl Player {
         match self {
             Self::North => Self::L5_MASK,
             Self::South => Self::R5_MASK,
+        }
+    }
+
+    pub(crate) fn opponent_base(&self) -> u32 {
+        match self {
+            Player::North => Self::ROW_8_MASK,
+            Player::South => Self::ROW_1_MASK,
         }
     }
 }

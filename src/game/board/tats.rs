@@ -57,19 +57,23 @@ impl Board {
         return mvs;
     }
 
-    pub(crate) fn white_jumpers(&self) -> Vec<Action> {
+    pub(crate) fn white_jumpers(&self, turn: Player) -> Vec<Action> {
         let empty = !(self.north | self.south);
-        let king = self.north & self.kings;
+        let king = self[turn] & self.kings;
         let mut mvs = Vec::new();
 
-        let temp = (empty << 4) & self.south;
+        let temp = empty.shift_by(4, turn) & self[!turn];
         println!("{:#032b} {}", temp, temp.trailing_zeros());
-        let jump = (((temp & Self::L3_MASK) << 3) | ((temp & Self::L5_MASK) << 5)) & self.north;
+        let jump = (((temp & turn.s3_mask()).shift_by(3, turn))
+            | ((temp & turn.s5_mask()).shift_by(5, turn)))
+            & self[turn];
+
         for src in Bits::new(jump) {
-            let right = ((Self::L3_MASK >> src) & 1) != 0;
+            let right = ((turn.s3_mask() >> src) & 1) != 0;
             let dir = if right { 5 } else { 3 };
-            let tgt = src - dir - 4;
-            let promoted = (1 << tgt & Self::ROW_8_MASK) != 0;
+            let tgt = src.move_by(dir, turn).move_by(4, turn);
+
+            let promoted = ((1u32).shift_by(tgt, turn) & turn.opponent_base()) != 0;
             mvs.push(Action::new(src, tgt, true, promoted, Scale::U32));
         }
 
@@ -166,7 +170,7 @@ mod tests {
         let south = 1 << 19 | 1 << 18;
 
         let board = Board::with(north, south, 1 << 22, Player::North, Qmvs::default());
-        let jumps = board.white_jumpers();
+        let jumps = board.white_jumpers(Player::North);
         let mvs = board.movers(Player::North);
 
         let expected = vec![
@@ -226,7 +230,7 @@ mod tests {
         let board = Board::with(north, south, 0, Player::North, Qmvs::default());
 
         let mvs = board.movers(Player::North);
-        let jumps = board.white_jumpers();
+        let jumps = board.white_jumpers(Player::North);
 
         let expected_mvs = vec![Action::new(22, 15, false, false, Scale::U64)];
         let expected_jumps = vec![Action::new(22, 4, true, false, Scale::U64)];
