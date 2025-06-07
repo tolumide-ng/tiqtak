@@ -15,9 +15,7 @@ use crate::mcts::traits::Player as PlayerTrait;
 #[cfg_attr(feature = "web", wasm_bindgen)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub enum Player {
-    /// player white
     North = 0,
-    /// player black
     South,
 }
 

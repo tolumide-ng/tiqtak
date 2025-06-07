@@ -85,7 +85,7 @@ impl Action {
             tgt,
             capture,
             promoted,
-            ..
+            scale,
         } = *self;
 
         match self.scale {
@@ -95,7 +95,7 @@ impl Action {
                 let (src_even, tgt_even) = ((src / cols) % 2 == 0, (tgt / cols) % 2 == 0);
                 let src = (src * 2) + !(src_even) as u8;
                 let tgt = (tgt * 2) + !(tgt_even) as u8;
-                Action::new(src, tgt, capture, promoted, Scale::U64)
+                Action::new(src, tgt, capture, promoted, scale)
             }
 
             Scale::U64 => Action::new(src / 2, tgt / 2, capture, promoted, Scale::U32),

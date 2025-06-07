@@ -13,11 +13,11 @@ const LEN: usize = 12;
 /// A list of action the user intends to play, in a scenario where there is no jump move
 /// this would only be one move(Action)
 /// ```rust
-/// use tiqtak::{Action, ActionPath};
-/// let mut mv = ActionPath::new(); // creates an empty
-/// mv.append(Action::new(8, 32, true, false)); // adds this to the mv list
-/// mv.prepend(Action::from((48, 32, true, false, true))); // Reserves the original order of the moves, but adds this as the first move, followed by the existing ones
-/// mv.append(Action::new(8, 2, false, true)); // append to the moves list
+/// use tiqtak::{Action, ActionPath, Scale};
+/// let mut mv = ActionPath::new(Scale::U64); // creates an empty
+/// mv.append(Action::new(8, 32, true, false, Scale::U64)); // adds this to the mv list
+/// mv.prepend(Action::from((48u8, 32u8, true, false, Scale::U64))); // Reserves the original order of the moves, but adds this as the first move, followed by the existing ones
+/// mv.append(Action::new(8, 2, false, true, Scale::U64)); // append to the moves list
 /// // final path would look like 16(src) -> 48(src) -> 32(target) -> 8 -> 2
 /// ```
 #[cfg_attr(feature = "web", wasm_bindgen)]
@@ -114,7 +114,7 @@ impl ActionPath {
 impl From<Action> for ActionPath {
     fn from(value: Action) -> Self {
         let mut result = Self::new(value.scale);
-        result.append(value);
+        let _ = result.append(value).unwrap();
         result
     }
 }

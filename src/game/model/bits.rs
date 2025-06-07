@@ -29,8 +29,8 @@ impl From<u32> for Bits {
 impl U32Ext for Bits {
     fn shift_by(&self, shift: u8, player: Player) -> u32 {
         match player {
-            Player::South => self.0 << shift,
-            Player::North => self.0 >> shift,
+            Player::South => self.0 >> shift,
+            Player::North => self.0 << shift,
         }
     }
 }

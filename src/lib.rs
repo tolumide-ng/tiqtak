@@ -24,6 +24,7 @@
 mod game;
 mod mcts;
 
+pub use game::board::scale::Scale;
 pub use game::board::state::Board;
 pub use game::convert64bits_to_32bits;
 pub use game::model::action::Action;
