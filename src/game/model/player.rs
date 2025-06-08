@@ -51,7 +51,7 @@ impl Player {
     const ROW_1_MASK: u32 = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3;
 
     /// side 3 mask
-    pub(crate) const fn s3_mask(&self) -> u32 {
+    pub(crate) const fn s3(&self) -> u32 {
         match self {
             Self::North => Self::L3_MASK,
             Self::South => Self::R3_MASK,
@@ -59,7 +59,7 @@ impl Player {
     }
 
     /// side 5 mask
-    pub(crate) const fn s5_mask(&self) -> u32 {
+    pub(crate) const fn s5(&self) -> u32 {
         match self {
             Self::North => Self::L5_MASK,
             Self::South => Self::R5_MASK,

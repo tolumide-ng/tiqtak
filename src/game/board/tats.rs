@@ -1,5 +1,5 @@
 use crate::{
-    Action, Board, Player,
+    Action, ActionPath, Board, Player,
     game::{
         model::bits::Bits,
         traits::{u8_ops::U8Ext, u32_shift::U32Ext},
@@ -9,11 +9,6 @@ use crate::{
 use super::scale::Scale::{self, *};
 
 impl Board {
-    const L3_MASK: u32 = 0xE0E0E0E;
-    const L5_MASK: u32 = 0x707070;
-    const R3_MASK: u32 = 0x70707070;
-    const R5_MASK: u32 = 0xE0E0E00;
-
     const ROW_8_MASK: u32 = 1 << 28 | 1 << 29 | 1 << 30 | 1 << 31;
 
     pub(crate) fn movers(&self, turn: Player) -> Vec<Action> {
@@ -26,11 +21,11 @@ impl Board {
             mvs.push(Action::new(src, src.move_by(4, turn), false, false, U32));
         }
 
-        for src in Bits::new(((empty & turn.s3_mask()).shift_by(3, turn)) & self[turn]) {
+        for src in Bits::new(((empty & turn.s3()).shift_by(3, turn)) & self[turn]) {
             mvs.push(Action::new(src, src.move_by(3, turn), false, false, U32));
         }
 
-        for src in Bits::new(((empty & turn.s5_mask()).shift_by(5, turn)) & self[turn]) {
+        for src in Bits::new(((empty & turn.s5()).shift_by(5, turn)) & self[turn]) {
             mvs.push(Action::new(src, src.move_by(3, turn), false, false, U32));
         }
 
@@ -41,13 +36,13 @@ impl Board {
                     mvs.push(Action::new(src, src.move_by(4, !turn), false, false, U32))
                 });
 
-            Bits::new(((empty & (!turn).s3_mask()).shift_by(3, !turn)) & king)
+            Bits::new(((empty & (!turn).s3()).shift_by(3, !turn)) & king)
                 .into_iter()
                 .for_each(|src| {
                     mvs.push(Action::new(src, src.move_by(3, !turn), false, false, U32))
                 });
 
-            Bits::new(((empty & (!turn).s5_mask()).shift_by(5, !turn)) & king)
+            Bits::new(((empty & (!turn).s5()).shift_by(5, !turn)) & king)
                 .into_iter()
                 .for_each(|src| {
                     mvs.push(Action::new(src, src.move_by(3, !turn), false, false, U32))
@@ -57,19 +52,18 @@ impl Board {
         return mvs;
     }
 
-    pub(crate) fn white_jumpers(&self, turn: Player) -> Vec<Action> {
+    pub(crate) fn jumpers(&self, turn: Player) -> Vec<Action> {
         let empty = !(self.north | self.south);
         let king = self[turn] & self.kings;
         let mut mvs = Vec::new();
 
         let temp = empty.shift_by(4, turn) & self[!turn];
-        println!("{:#032b} {}", temp, temp.trailing_zeros());
-        let jump = (((temp & turn.s3_mask()).shift_by(3, turn))
-            | ((temp & turn.s5_mask()).shift_by(5, turn)))
+        let jump = (((temp & turn.s3()).shift_by(3, turn))
+            | ((temp & turn.s5()).shift_by(5, turn)))
             & self[turn];
 
         for src in Bits::new(jump) {
-            let right = ((turn.s3_mask() >> src) & 1) != 0;
+            let right = ((turn.s3().shift_by(src, !turn)) & 1) != 0;
             let dir = if right { 5 } else { 3 };
             let tgt = src.move_by(dir, turn).move_by(4, turn);
 
@@ -77,37 +71,52 @@ impl Board {
             mvs.push(Action::new(src, tgt, true, promoted, Scale::U32));
         }
 
-        let temp = (((empty & Self::L3_MASK) << 3) | ((empty & Self::L5_MASK) << 5)) & self.south;
-        for src in Bits::new((temp << 4) & self.north) {
-            let left = (Self::L3_MASK >> (src - 4)) & 1 != 0;
+        let temp = (((empty & turn.s3()).shift_by(3, turn))
+            | ((empty & turn.s5()).shift_by(5, turn)))
+            & self[!turn];
+        for src in Bits::new((temp.shift_by(4, turn)) & self[turn]) {
+            let left = (turn.s3().shift_by(src.move_by(4, turn), !turn)) & 1 != 0;
             let dir = if left { 5 } else { 3 };
-            let tgt = src - dir - 4;
-            let promoted = (1 << tgt & Self::ROW_8_MASK) != 0;
+            let tgt = src.move_by(dir, turn).move_by(4, turn);
+            let promoted = ((1u32).shift_by(tgt, turn) & turn.opponent_base()) != 0;
             mvs.push(Action::new(src, tgt, true, promoted, Scale::U32));
         }
 
         if king != 0 {
-            let temp = (empty >> 4) & self.south;
-            let jump = (((temp & Self::R3_MASK) >> 3) | ((temp & Self::R5_MASK) >> 5)) & king;
+            let temp = (empty.shift_by(4, !turn)) & self[!turn];
+            let jump = (((temp & turn.s3()).shift_by(3, !turn))
+                | ((temp & turn.s5()).shift_by(5, !turn)))
+                & king;
+
             for src in Bits::new(jump) {
-                let right = (Self::R3_MASK >> src) & 1 != 0;
+                let right = (turn.s3().shift_by(src, !turn)) & 1 != 0;
                 let dir = if right { 3 } else { 5 };
-                let tgt = src - (dir + 4);
+                let tgt = src.move_by(dir + 4, turn);
                 mvs.push(Action::new(src, tgt, true, true, Scale::U32));
             }
-            let temp =
-                (((empty & Self::R3_MASK) >> 3) | ((empty & Self::R5_MASK) >> 5)) & self.south;
-            for src in Bits::new((temp >> 4) & king) {
-                let right = (Self::R3_MASK >> (src + 4)) & 1 != 0;
+
+            let temp = (((empty & turn.s3()).shift_by(3, !turn))
+                | ((empty & turn.s5()).shift_by(5, !turn)))
+                & self[!turn];
+            for src in Bits::new((temp.shift_by(4, !turn)) & king) {
+                let right = (turn.s3().shift_by(src + 4, !turn)) & 1 != 0;
                 let dir = if right { 3 } else { 5 };
-                let tgt = src - (4 + dir);
+                let tgt = src.move_by(dir + 4, turn);
                 mvs.push(Action::new(src, tgt, true, true, Scale::U32));
             }
         }
         mvs
     }
 
-    fn get(&self) {}
+    fn get(&self, turn: Player) {
+        let mut regulars = self.movers(turn);
+        let mut jumpers = self.jumpers(turn);
+
+        for mv in regulars.iter_mut().chain(jumpers.iter_mut()) {
+            let board = self.play((*mv).into()).unwrap();
+            let regs = board.get(!turn);
+        }
+    }
 }
 
 #[cfg(test)]
@@ -170,7 +179,7 @@ mod tests {
         let south = 1 << 19 | 1 << 18;
 
         let board = Board::with(north, south, 1 << 22, Player::North, Qmvs::default());
-        let jumps = board.white_jumpers(Player::North);
+        let jumps = board.jumpers(Player::North);
         let mvs = board.movers(Player::North);
 
         let expected = vec![
@@ -230,7 +239,7 @@ mod tests {
         let board = Board::with(north, south, 0, Player::North, Qmvs::default());
 
         let mvs = board.movers(Player::North);
-        let jumps = board.white_jumpers(Player::North);
+        let jumps = board.jumpers(Player::North);
 
         let expected_mvs = vec![Action::new(22, 15, false, false, Scale::U64)];
         let expected_jumps = vec![Action::new(22, 4, true, false, Scale::U64)];

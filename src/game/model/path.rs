@@ -68,7 +68,7 @@ impl ActionPath {
     }
 
     pub(crate) fn parse_me(self) -> Result<Self, ApiError> {
-        self.mvs
+        self.mvs[..self.len]
             .iter()
             .try_for_each(|mv| self.parse((*mv).into()).map(drop))?;
 
@@ -82,6 +82,16 @@ impl ActionPath {
         self.len += 1;
 
         Ok(())
+    }
+
+    pub(crate) fn transcode(&self) -> Self {
+        let mut new = Self::new(!self.scale);
+        for (i, a) in self.mvs[..self.len].iter().enumerate() {
+            let action = Action::from(*a).transcode();
+            new.mvs[i] = action.into();
+        }
+
+        new
     }
 
     /// Prepends an action,

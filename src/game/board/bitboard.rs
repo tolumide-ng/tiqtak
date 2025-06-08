@@ -1,12 +1,16 @@
+use crate::Scale::*;
+use crate::game::model::bits::Bits;
 use crate::game::model::player::Player;
 use crate::game::model::{action::Action, path::ActionPath};
+use crate::game::traits::u8_ops::U8Ext;
 use crate::game::traits::u32_shift::U32Ext;
 // use crate::{Board, Qmvs};
 
 pub(crate) struct BitBoard {
     pub(super) current: u32,
-    pub(super) other: u32,
     pub(super) team: u32,
+    pub(super) other: u32,
+    pub(super) kings: u32,
 }
 
 impl BitBoard {
@@ -31,8 +35,128 @@ impl BitBoard {
     const R3_MASK: u32 = 0x70707070;
     const R5_MASK: u32 = 0xE0E0E00;
 
+    fn next<F>(&self, src: u8, tgt: u8, turn: Player, capture: bool, mut func: F)
+    where
+        F: FnMut(ActionPath),
+    {
+        let kings = self.current & self.kings;
+        let promoted = ((1u32).shift_by(tgt, turn) & turn.opponent_base()) != 0;
+
+        let parent = Action::new(src, tgt, capture, promoted, U32);
+
+        let current = 1 << tgt;
+        let others = self.other & !current;
+        let team = (self.team & !(1 << src)) | (self.current & !(1 << src)) | current;
+        let kings =
+            (kings & !(1 << src)) | (current * (u32::from((kings & 1 << src != 0) || promoted)));
+
+        let result = BitBoard::new(current, others, team, kings).get(turn);
+
+        // println!("this is not a  capture <<<<<<<<<<>>>>>>>>>>>> {:?}", result);
+
+        if capture {
+            result.into_iter().for_each(|mut actions| {
+                if let Some(act) = actions.peek(actions.len() - 1) {
+                    if act.capture {
+                        actions.prepend(parent).unwrap();
+                        func(actions);
+                    }
+                }
+            });
+        }
+
+        func(parent.into());
+    }
+
+    pub(crate) fn get(&self, turn: Player) -> Vec<ActionPath> {
+        let mut mvs = vec![];
+
+        let empty = !(self.current | self.other | self.team);
+        let kings = self.current & self.kings;
+
+        // regular jumps
+        let temp = empty.shift_by(4, turn) & self.other;
+        let jump = (((temp & turn.s3()).shift_by(3, turn))
+            | ((temp & turn.s5()).shift_by(5, turn)))
+            & self.current;
+
+        for src in Bits::new(jump) {
+            let left = ((turn.s3().shift_by(src, !turn)) & 1) != 0;
+            let dir = if left { 5 } else { 3 };
+            let tgt = src.move_by(dir, turn).move_by(4, turn);
+
+            self.next(src, tgt, turn, true, |path| {
+                mvs.push(path);
+            });
+        }
+
+        let temp = (((empty & turn.s3()).shift_by(3, turn))
+            | ((empty & turn.s5()).shift_by(5, turn)))
+            & self.other;
+        for src in Bits::new((temp.shift_by(4, turn)) & self.current) {
+            let left = (turn.s3().shift_by(src.move_by(4, turn), !turn)) & 1 != 0;
+            let dir = if left { 5 } else { 3 };
+            let tgt = src.move_by(dir, turn).move_by(4, turn);
+
+            self.next(src, tgt, turn, true, |path| {
+                mvs.push(path);
+            });
+        }
+
+        if kings != 0 {
+            // king jumpers (jumping in both directions i.e North, and South)
+            let tempk0 = (empty.shift_by(4, !turn)) & self.other;
+            let jumpk0 = (((tempk0 & turn.s3()).shift_by(3, !turn))
+                | ((tempk0 & turn.s5()).shift_by(5, !turn)))
+                & kings;
+
+            let tempk1 = (((empty & turn.s3()).shift_by(3, !turn))
+                | ((empty & turn.s5()).shift_by(5, !turn)))
+                & self.other;
+            let jumpk1 = (tempk1.shift_by(4, !turn)) & kings;
+
+            let jumping_kings = [(jumpk0, 0), (jumpk1, 4)];
+
+            for (jumper, shift) in jumping_kings {
+                for src in Bits::new(jumper) {
+                    let right = (turn.s3().shift_by(src + shift, !turn)) & 1 != 0;
+                    let dir = if right { 3 } else { 5 };
+                    let tgt = src.move_by(dir + shift, turn);
+
+                    self.next(src, tgt, turn, true, |path| {
+                        mvs.push(path);
+                    });
+                }
+            }
+        }
+
+        // (movers, target, is_king)
+        let movers = [
+            ((empty.shift_by(4, turn)), 4u8, false), // regular piece
+            (((empty & turn.s3()).shift_by(3, turn)), 3, false), // regular piece
+            (((empty & turn.s5()).shift_by(5, turn)), 5, false), // regular piece
+            ((empty.shift_by(4, !turn)), 4u8, true), // king move
+            (((empty & (!turn).s3()).shift_by(3, !turn)), 3, true), // king move
+            (((empty & (!turn).s5()).shift_by(5, !turn)), 3, true), // king move
+        ];
+
+        for (bits, shift, is_king) in movers {
+            let pieces = if is_king { kings } else { self.current };
+            let dir = if is_king { !turn } else { turn };
+            for src in Bits::new(bits & pieces) {
+                let tgt = src.move_by(shift, dir);
+
+                self.next(src, tgt, turn, false, |path| {
+                    mvs.push(path);
+                });
+            }
+        }
+
+        mvs
+    }
+
     // hor_mask: horizontal mask
-    fn get(&self, hor_mask: u32, shift: u8, turn: Player) -> Vec<ActionPath> {
+    fn getss(&self, hor_mask: u32, shift: u8, turn: Player) -> Vec<ActionPath> {
         // vertical mask
         let v_mask = match turn {
             Player::South => Self::TOP,
@@ -140,18 +264,18 @@ impl BitBoard {
     /// exclude the pieces already on row 8 (top row)
     /// pieces that are safe to move top-left
     fn top_left(&self) -> Vec<ActionPath> {
-        self.get(Self::LEFT, Self::TOP_LEFT_MV, Player::South)
+        self.getss(Self::LEFT, Self::TOP_LEFT_MV, Player::South)
     }
 
     /// exclude the pieces already on column H (right column)
     /// exclude the pieces already on row 8 (top row)
     fn top_right(&self) -> Vec<ActionPath> {
-        self.get(Self::RIGHT, Self::TOP_RIGHT_MV, Player::South)
+        self.getss(Self::RIGHT, Self::TOP_RIGHT_MV, Player::South)
     }
 
     fn bottom_right(&self) -> Vec<ActionPath> {
-        let xx = self.get(Self::RIGHT, Self::BOTTOM_RIGHT_MV, Player::North);
-        // let abc = self.get(Self::RIGHT, Coord::SouthWest.shamt(row), turn)
+        let xx = self.getss(Self::RIGHT, Self::BOTTOM_RIGHT_MV, Player::North);
+        // let abc = self.getss(Self::RIGHT, Coord::SouthWest.shamt(row), turn)
         // println!("bottom_right");
         // for x in 0..xx.len() {
         //     let ax = xx[x];
@@ -167,7 +291,7 @@ impl BitBoard {
     /// exclude the pieces already on column A (left column)
     /// exclude the pieces already on row 1 (bottom row)
     pub(crate) fn bottom_left(&self) -> Vec<ActionPath> {
-        let xx = self.get(Self::LEFT, Self::BOTTOM_LEFT_MV, Player::North);
+        let xx = self.getss(Self::LEFT, Self::BOTTOM_LEFT_MV, Player::North);
         // println!("bottom_left");
         // for x in 0..xx.len() {
         //     let ax = xx[x];
@@ -180,21 +304,23 @@ impl BitBoard {
         xx
     }
 
-    pub(super) fn new(current: u32, other: u32, team: u32) -> Self {
+    pub(super) fn new(current: u32, other: u32, team: u32, kings: u32) -> Self {
         Self {
             current,
             other,
             team,
+            kings,
         }
     }
 }
 
-impl From<(u32, u32, u32)> for BitBoard {
-    fn from(value: (u32, u32, u32)) -> Self {
+impl From<(u32, u32, u32, u32)> for BitBoard {
+    fn from(value: (u32, u32, u32, u32)) -> Self {
         Self {
             current: value.0,
             other: value.1,
             team: value.2,
+            kings: value.3,
         }
     }
 }
@@ -203,69 +329,78 @@ impl From<(u32, u32, u32)> for BitBoard {
 mod tests {
 
     use crate::{
+        Scale::*,
         convert64bits_to_32bits::getax,
         game::{board::state::Board, utils::Qmvs},
     };
 
     use super::*;
 
-    // fn get_path<T>(input: Vec<Vec<T>>) -> Vec<ActionPath>
-    // where
-    //     Action: From<T>,
-    //     T: Copy,
-    // {
-    //     input
-    //         .into_iter()
-    //         .map(|a| {
-    //             ActionPath::from(
-    //                 a.iter()
-    //                     .map(|ac| Action::from(*ac).into())
-    //                     .collect::<Vec<u16>>()
-    //                     .as_slice(),
-    //             )
-    //         })
-    //         .collect::<Vec<_>>()
-    // }
+    fn get_path<T>(input: Vec<Vec<T>>) -> Vec<ActionPath>
+    where
+        Action: From<T>,
+        T: Copy,
+    {
+        input
+            .into_iter()
+            .map(|a| {
+                let r = ActionPath::try_from(
+                    a.iter()
+                        .map(|ac| Action::from(*ac).into())
+                        .collect::<Vec<u16>>()
+                        .as_slice(),
+                );
+                println!("the expected---- >>>> {:?}", r);
+                r.unwrap()
+            })
+            .collect::<Vec<_>>()
+    }
 
-    // #[test]
-    // fn should_make_only_valid_moves() {
-    //     let xxx = 0x11200000;
-    //     let b = Board::with(xxx, 0, 0, Player::North, Qmvs::default());
-    //     println!("{}", b);
+    // should return all mulitple moves (for a single piece) in one go for a regular player test (bottom-left -->> bottom-right)
+    // same as above, but testing for kings
+    #[test]
+    fn should_return_all_multiples_moves_by_one_piece() {
+        let south = 1 | 1 << 5 | 1 << 13 | 1u32 << 22;
+        let north = 1u32 << 27;
 
-    //     // let north = 0x11200000;
-    //     // let south = 0x26000;
-    //     let north = 1 << 22;
-    //     let south = 1 << 19;
+        // let kings = 1 << 42;
+        let kings = 0;
 
-    //     let board = Board::with(north, south, 0, Player::North, Qmvs::default());
-    //     println!("{board}");
+        let board = Board::with(north, south, kings, Player::North, Qmvs::default());
+        println!("{}", board);
+        let received = board.options(Player::North);
 
-    //     assert!(false);
+        // println!("received len >>>> {:?}", received.len());
+        received.iter().for_each(|x| {
+            println!("{:?}", x.to_string());
+            x.mvs[..x.len].iter().for_each(|xx| {
+                println!("{:?}", Action::from(*xx).to_string());
+            });
 
-    //     // let received = board.options(Player::North);
+            // println!("\n\n _________________________");
+        });
 
-    //     // let expected = get_path(vec![
-    //     //     vec![(54u8, 47u8, false, false, true)],
-    //     //     vec![(45u8, 38u8, false, false, true)],
-    //     // ]);
+        let expected = get_path(vec![
+            vec![
+                (54u8, 36u8, true, false, U64),
+                (36, 18, true, false, U64),
+                (18, 4, true, true, U64),
+            ],
+            vec![(54u8, 36u8, true, false, U64), (36, 18, true, false, U64)],
+            vec![(54u8, 36u8, true, false, U64)],
+            vec![(54u8, 47u8, false, false, U64)],
+        ]);
 
-    //     // println!(
-    //     //     ":first :::: : {:?}",
-    //     //     getax(Action::from((54u8, 47u8, false, false)))
-    //     // );
+        assert_eq!(received.len(), expected.len());
 
-    //     // expected.iter().for_each(|x| {
-    //     //     let rr = received.iter().for_each(|a| {
-    //     //         let abx = Action::from(a[0]).transcode();
-    //     //         println!("the x here is {:?} {:?}", abx, abx.to_string());
-    //     //     });
-    //     //     assert!(received.contains(&x))
-    //     // });
-
-    //     // // expected.iter().for_each(|x| assert!(received.contains(&x)));
-    //     // assert_eq!(received.len(), expected.len());
-    // }
+        expected.iter().for_each(|path| {
+            path.mvs[..path.len]
+                .iter()
+                .for_each(|p| print!("{}", Action::from(*p)));
+            println!("\n||||||||||||||||||||||||||||||||||||||||||||||||||");
+            assert!(received.contains(&path.transcode()))
+        });
+    }
 
     // #[test]
     // fn should_return_all_possible_moves_for_south_player() {
@@ -317,40 +452,6 @@ mod tests {
     //         .for_each(|mv| assert!(received.contains(&mv)));
     // }
 
-    // // should return all mulitple moves (for a single piece) in one go for a regular player test (bottom-left -->> bottom-right)
-    // // same as above, but testing for kings
-    // #[test]
-    // fn should_return_all_multiples_moves_by_one_piece() {
-    //     let south = 0x200008000801u64;
-    //     let north = 0x40000000000000u64;
-
-    //     let kings = 1 << 42;
-
-    //     let board = Board::with(north, south, kings, Player::North, Qmvs::default());
-    //     let received = board.options(Player::North);
-
-    //     // received.sort();
-
-    //     received.iter().for_each(|x| println!("{}", x.to_string()));
-
-    //     let expected = get_path(vec![
-    //         vec![
-    //             (54u8, 36u8, true, false),
-    //             (36, 18, true, false),
-    //             (18, 4, true, true),
-    //         ],
-    //         vec![(54u8, 36u8, true, false), (36, 18, true, false)],
-    //         vec![(54u8, 36u8, true, false)],
-    //         vec![(54u8, 47u8, false, false)],
-    //     ]);
-
-    //     assert_eq!(received.len(), expected.len());
-
-    //     expected
-    //         .iter()
-    //         .for_each(|mv| assert!(received.contains(mv)));
-    // }
-
     // // should_return_all_possible_moves_in_the_start_position
     // #[test]
     // fn should_return_all_possible_moves_in_the_base_position() {
@@ -397,6 +498,46 @@ mod tests {
     //     expected
     //         .iter()
     //         .for_each(|mv| assert!(received.contains(&mv)));
+    // }
+
+    // #[test]
+    // fn should_make_only_valid_moves() {
+    //     let xxx = 0x11200000;
+    //     let b = Board::with(xxx, 0, 0, Player::North, Qmvs::default());
+    //     println!("{}", b);
+
+    //     // let north = 0x11200000;
+    //     // let south = 0x26000;
+    //     let north = 1 << 22;
+    //     let south = 1 << 19;
+
+    //     let board = Board::with(north, south, 0, Player::North, Qmvs::default());
+    //     println!("{board}");
+
+    //     assert!(false);
+
+    //     // let received = board.options(Player::North);
+
+    //     // let expected = get_path(vec![
+    //     //     vec![(54u8, 47u8, false, false, true)],
+    //     //     vec![(45u8, 38u8, false, false, true)],
+    //     // ]);
+
+    //     // println!(
+    //     //     ":first :::: : {:?}",
+    //     //     getax(Action::from((54u8, 47u8, false, false)))
+    //     // );
+
+    //     // expected.iter().for_each(|x| {
+    //     //     let rr = received.iter().for_each(|a| {
+    //     //         let abx = Action::from(a[0]).transcode();
+    //     //         println!("the x here is {:?} {:?}", abx, abx.to_string());
+    //     //     });
+    //     //     assert!(received.contains(&x))
+    //     // });
+
+    //     // // expected.iter().for_each(|x| assert!(received.contains(&x)));
+    //     // assert_eq!(received.len(), expected.len());
     // }
 
     // #[test]

@@ -114,14 +114,15 @@ impl Board {
             return false;
         }
 
-        let board = BitBoard::new(1 << mv.src, self[!turn], self[turn]);
-        let mut moves = board.moves(turn);
+        // let board = BitBoard::new(1 << mv.src, self[!turn], self[turn], self.kings);
+        // let mut moves = board.moves(turn);
 
-        if self.kings & src_mask != 0 {
-            moves.extend(board.moves(!turn));
-        }
+        // if self.kings & src_mask != 0 {
+        //     moves.extend(board.moves(!turn));
+        // }
+        let paths = BitBoard::new(1 << mv.src, self[!turn], self[turn], self.kings).get(turn);
 
-        moves.contains(&action)
+        paths.contains(&action)
     }
 
     /// Returns all the possible options(moves) that the selected user can play
@@ -129,15 +130,17 @@ impl Board {
     pub fn options(&self, turn: Player) -> Vec<ActionPath> {
         let regulars = self.regular(turn);
         let kings = self.kings(turn);
-
         let opponent = self[!turn];
-        let mut natural_mvs = BitBoard::from((regulars | kings, opponent, 0)).moves(turn);
-        let king_mvs = BitBoard::from((kings, opponent, regulars)).moves(!turn); // extra king moves
 
-        natural_mvs.reserve(king_mvs.len());
-        natural_mvs.extend(king_mvs);
+        // let mut natural_mvs =
+        //     BitBoard::from((regulars | kings, opponent, 0, self.kings)).moves(turn);
+        // let king_mvs = BitBoard::from((kings, opponent, regulars, self.kings)).moves(!turn); // extra king moves
 
-        natural_mvs
+        // natural_mvs.reserve(king_mvs.len());
+        // natural_mvs.extend(king_mvs);
+
+        // natural_mvs
+        BitBoard::new(regulars | kings, opponent, 0, self.kings).get(turn)
     }
 
     /// This returns a new Board state (the new board state) after the move (ActionPath) is applied to the board
