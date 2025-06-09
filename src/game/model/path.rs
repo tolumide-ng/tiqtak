@@ -86,6 +86,8 @@ impl ActionPath {
 
     pub(crate) fn transcode(&self) -> Self {
         let mut new = Self::new(!self.scale);
+        new.len = self.len;
+
         for (i, a) in self.mvs[..self.len].iter().enumerate() {
             let action = Action::from(*a).transcode();
             new.mvs[i] = action.into();
@@ -139,7 +141,6 @@ impl TryFrom<&[u16]> for ActionPath {
         let mut path = Self::new(act.scale);
         path.mvs[..value.len()].copy_from_slice(value);
         path.len = value.len();
-
         path.parse_me()
     }
 }

@@ -102,27 +102,30 @@ impl Board {
 
     /// Checks whether the move (ActionPath) about to be played is valid based on the board's current state
     #[cfg_attr(feature = "web", wasm_bindgen)]
-    pub fn is_valid(&self, action: ActionPath, turn: Player) -> bool {
+    pub fn is_valid(&self, path: ActionPath, turn: Player) -> bool {
         assert!(
-            action.len > 0,
+            path.len > 0,
             "Invalid Action: There must be atleast one move in an action"
         );
-        let mv = Action::from(action[0]);
-        let src_mask = 1u32 << mv.src;
+
+        let mut action = Action::from(path[0]);
+        if action.scale == Scale::U64 {
+            action = action.transcode();
+        }
+
+        let src_mask = 1u32 << action.src;
 
         if (self[turn] & src_mask) == 0 {
             return false;
         }
 
-        // let board = BitBoard::new(1 << mv.src, self[!turn], self[turn], self.kings);
-        // let mut moves = board.moves(turn);
+        let result = BitBoard::new(1 << action.src, self[!turn], self[turn], self.kings).get(turn);
 
-        // if self.kings & src_mask != 0 {
-        //     moves.extend(board.moves(!turn));
-        // }
-        let paths = BitBoard::new(1 << mv.src, self[!turn], self[turn], self.kings).get(turn);
-
-        paths.contains(&action)
+        if path.scale == Scale::U64 {
+            return result.contains(&path.transcode());
+        } else {
+            return result.contains(&path);
+        }
     }
 
     /// Returns all the possible options(moves) that the selected user can play
@@ -132,14 +135,6 @@ impl Board {
         let kings = self.kings(turn);
         let opponent = self[!turn];
 
-        // let mut natural_mvs =
-        //     BitBoard::from((regulars | kings, opponent, 0, self.kings)).moves(turn);
-        // let king_mvs = BitBoard::from((kings, opponent, regulars, self.kings)).moves(!turn); // extra king moves
-
-        // natural_mvs.reserve(king_mvs.len());
-        // natural_mvs.extend(king_mvs);
-
-        // natural_mvs
         BitBoard::new(regulars | kings, opponent, 0, self.kings).get(turn)
     }
 
@@ -167,7 +162,7 @@ impl Board {
                 ..
             } = action;
 
-            // println!("is >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> u64 {}", tgt);
+            println!("is >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> src-->> {src}, tgt -->> {tgt}",);
 
             let src_mask = 1 << src;
             let tgt_mask = 1 << tgt;

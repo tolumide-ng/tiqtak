@@ -51,6 +51,8 @@ impl Player {
     const ROW_1_MASK: u32 = 1 << 0 | 1 << 1 | 1 << 2 | 1 << 3;
 
     /// side 3 mask
+    /// Returns mask r3 for south, and  
+    /// returns mask l3 for north
     pub(crate) const fn s3(&self) -> u32 {
         match self {
             Self::North => Self::L3_MASK,
@@ -68,8 +70,8 @@ impl Player {
 
     pub(crate) fn opponent_base(&self) -> u32 {
         match self {
-            Player::North => Self::ROW_8_MASK,
-            Player::South => Self::ROW_1_MASK,
+            Player::North => Self::ROW_1_MASK,
+            Player::South => Self::ROW_8_MASK,
         }
     }
 }

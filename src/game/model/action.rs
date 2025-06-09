@@ -95,7 +95,7 @@ impl Action {
                 let (src_even, tgt_even) = ((src / cols) % 2 == 0, (tgt / cols) % 2 == 0);
                 let src = (src * 2) + !(src_even) as u8;
                 let tgt = (tgt * 2) + !(tgt_even) as u8;
-                Action::new(src, tgt, capture, promoted, scale)
+                Action::new(src, tgt, capture, promoted, Scale::U64)
             }
 
             Scale::U64 => Action::new(src / 2, tgt / 2, capture, promoted, Scale::U32),
@@ -149,7 +149,9 @@ impl Display for Action {
 /// last 1 bit - free for now
 impl From<Action> for u16 {
     fn from(value: Action) -> Self {
-        let result = ((value.scale as u16) << Action::SHIFT_BITS)
+        let scale_bit = matches!(value.scale, Scale::U64) as u16;
+
+        let result = (scale_bit << Action::SHIFT_BITS)
             | (u16::from(value.promoted) << Action::SHIFT_P)
             | (u16::from(value.capture) << Action::SHIFT_CP)
             | (u16::from(value.tgt) << Action::SHIFT_TGT)
@@ -162,17 +164,18 @@ impl From<Action> for u16 {
 impl From<u16> for Action {
     fn from(value: u16) -> Self {
         let src = (value & Self::SRC_MASK) as u8;
-        let tgt = ((value & Self::TGT_MASK) >> Self::SHIFT_TGT) as u8;
         let capture = (value & (1 << Self::SHIFT_CP)) != 0;
+        let tgt = ((value & Self::TGT_MASK) >> Self::SHIFT_TGT) as u8;
         let promoted = (value & (1 << Self::SHIFT_P)) != 0;
-        let is_u64 = (value & (1 << Self::SHIFT_BITS)) != 0;
+        let scale = ((1 << Self::SHIFT_BITS) & value) != 0;
 
         Self {
             src,
             tgt,
             capture,
             promoted,
-            scale: Scale::from(is_u64),
+            // scale: Scale::from(is_u64),
+            scale: if scale { Scale::U64 } else { Scale::U32 },
         }
     }
 }
@@ -218,4 +221,10 @@ mod action {
         assert_eq!(new_action.capture, false);
         assert_eq!(new_action.promoted, true);
     }
+
+    // #[test]
+    // fn should_map_to_the_same_values() {
+    //     // {src: 3C, tgt: 1E, capture: true, promoted: false, scale: U64}
+    //     let action = Action::new(18, 4, true, false, Scale::U64);
+    // }
 }
