@@ -7,8 +7,8 @@ pub(crate) trait U32Ext {
 impl U32Ext for u32 {
     fn shift_by(&self, shift: u8, player: Player) -> u32 {
         match player {
-            Player::South => self >> shift,
-            Player::North => self << shift,
+            Player::North => self << shift, // moves north wards --> index increases
+            Player::South => self >> shift, // moves southwards --> index decreases
         }
     }
 }

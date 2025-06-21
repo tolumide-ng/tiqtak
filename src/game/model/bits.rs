@@ -1,5 +1,6 @@
 use crate::{Player, game::traits::u32_shift::U32Ext};
 
+#[derive(Debug, Default)]
 pub struct Bits(u32);
 
 impl Bits {
@@ -44,7 +45,23 @@ impl Iterator for Bits {
         }
 
         let idx = self.0.trailing_zeros() as u8;
+        // println!("index is >>> {}", idx);
         self.0 &= self.0 - 1;
         Some(idx)
     }
 }
+
+impl TryFrom<(u8, i8)> for Bits {
+    type Error = &'static str;
+
+    fn try_from((src, offset): (u8, i8)) -> Result<Self, Self::Error> {
+        let result = src as i8 + offset;
+        if !(0..=31).contains(&result) {
+            return Err("");
+        }
+
+        Ok(Bits((result as u8).into()))
+    }
+}
+
+

@@ -160,51 +160,51 @@ mod tests {
             .collect::<Vec<_>>()
     }
 
-    #[test]
-    #[ignore = "reason"]
-    fn should_make_return_valid_moves_for_simple_pieces() {
-        let north = 1 << 22;
-        let south = 1 << 19;
+    // #[test]
+    // #[ignore = "reason"]
+    // fn should_make_return_valid_moves_for_simple_pieces() {
+    //     let north = 1 << 22;
+    //     let south = 1 << 19;
 
-        let bb = Board::with(north, south, 0, Player::North, Qmvs::default());
-        // let bb = Board::new();
-        println!("{bb}");
+    //     let bb = Board::with(north, south, 0, Player::North, Qmvs::default());
+    //     // let bb = Board::new();
+    //     println!("{bb}");
 
-        // let board = Bitty::new(south, 0, north, 0);
-        // let received = board.get_mvs(Player::South);
+    //     // let board = Bitty::new(south, 0, north, 0);
+    //     // let received = board.get_mvs(Player::South);
 
-        let board = Bitty::new(north, 0, south, 0);
-        let received = board.get_mvs(Player::North);
+    //     let board = Bitty::new(north, 0, south, 0);
+    //     let received = board.get_mvs(Player::North);
 
-        received.iter().for_each(|path| {
-            for i in 0..path.len {
-                let act = Action::from(path[i]);
-                println!("abc sssss {:?}", act);
-                println!("xx >>> {} \n\n", act);
-            }
-        });
+    //     received.iter().for_each(|path| {
+    //         for i in 0..path.len {
+    //             let act = Action::from(path[i]);
+    //             println!("abc sssss {:?}", act);
+    //             println!("xx >>> {} \n\n", act);
+    //         }
+    //     });
 
-        // let received = board.options(Player::North);
+    //     // let received = board.options(Player::North);
 
-        let expected = get_path(vec![
-            vec![(22u8, 26u8, false, false, true)],
-            vec![(22u8, 27u8, false, false, true)],
-        ]);
+    //     let expected = get_path(vec![
+    //         vec![(22u8, 26u8, false, false, true)],
+    //         vec![(22u8, 27u8, false, false, true)],
+    //     ]);
 
-        assert_eq!(expected.len(), received.len());
+    //     assert_eq!(expected.len(), received.len());
 
-        println!("received:: {:?}", received);
-        println!("expected:: {:?}", expected);
+    //     println!("received:: {:?}", received);
+    //     println!("expected:: {:?}", expected);
 
-        expected.iter().for_each(|x| {
-            // let rr = received.iter().for_each(|a| {
-            //     let abx = Action::from(a[0]).transcode();
-            //     println!("the x here is {:?} {:?}", abx, abx.to_string());
-            // });
-            assert!(received.contains(&x))
-        });
+    //     expected.iter().for_each(|x| {
+    //         // let rr = received.iter().for_each(|a| {
+    //         //     let abx = Action::from(a[0]).transcode();
+    //         //     println!("the x here is {:?} {:?}", abx, abx.to_string());
+    //         // });
+    //         assert!(received.contains(&x))
+    //     });
 
-        // // expected.iter().for_each(|x| assert!(received.contains(&x)));
-        // assert_eq!(received.len(), expected.len());
-    }
+    //     // // expected.iter().for_each(|x| assert!(received.contains(&x)));
+    //     // assert_eq!(received.len(), expected.len());
+    // }
 }

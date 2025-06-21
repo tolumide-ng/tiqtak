@@ -1,6 +1,6 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use std::{fmt::Display, ops::Index};
+use std::ops::Index;
 #[cfg(feature = "web")]
 use wasm_bindgen::prelude::*;
 
@@ -102,26 +102,30 @@ impl Board {
 
     /// Checks whether the move (ActionPath) about to be played is valid based on the board's current state
     #[cfg_attr(feature = "web", wasm_bindgen)]
-    pub fn is_valid(&self, action: ActionPath, turn: Player) -> bool {
+    pub fn is_valid(&self, path: ActionPath, turn: Player) -> bool {
         assert!(
-            action.len > 0,
+            path.len > 0,
             "Invalid Action: There must be atleast one move in an action"
         );
-        let mv = Action::from(action[0]);
-        let src_mask = 1u32 << mv.src;
+
+        let mut action = Action::from(path[0]);
+        if action.scale == Scale::U64 {
+            action = action.transcode();
+        }
+
+        let src_mask = 1u32 << action.src;
 
         if (self[turn] & src_mask) == 0 {
             return false;
         }
 
-        let board = BitBoard::new(1 << mv.src, self[!turn], self[turn]);
-        let mut moves = board.moves(turn);
+        let result = BitBoard::new(1 << action.src, self[!turn], self[turn], self.kings).get(turn);
 
-        if self.kings & src_mask != 0 {
-            moves.extend(board.moves(!turn));
+        if path.scale == Scale::U64 {
+            return result.contains(&path.transcode());
+        } else {
+            return result.contains(&path);
         }
-
-        moves.contains(&action)
     }
 
     /// Returns all the possible options(moves) that the selected user can play
@@ -129,15 +133,9 @@ impl Board {
     pub fn options(&self, turn: Player) -> Vec<ActionPath> {
         let regulars = self.regular(turn);
         let kings = self.kings(turn);
-
         let opponent = self[!turn];
-        let mut natural_mvs = BitBoard::from((regulars | kings, opponent, 0)).moves(turn);
-        let king_mvs = BitBoard::from((kings, opponent, regulars)).moves(!turn); // extra king moves
 
-        natural_mvs.reserve(king_mvs.len());
-        natural_mvs.extend(king_mvs);
-
-        natural_mvs
+        BitBoard::new(regulars | kings, opponent, 0, self.kings).get(turn)
     }
 
     /// This returns a new Board state (the new board state) after the move (ActionPath) is applied to the board
@@ -164,14 +162,22 @@ impl Board {
                 ..
             } = action;
 
-            // println!("is >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> u64 {}", tgt);
+            println!(
+                "\n\nis >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> src-->> {src}, tgt -->> {tgt}\n\n",
+            );
 
             let src_mask = 1 << src;
             let tgt_mask = 1 << tgt;
 
+            // let kings = ((self.kings & !(1 << src)) & !(1 << captured))
+            //     | (u32::from(is_king || promoted) << tgt);
+
             // if the piece is a moving king, we ensure that they remain king no-matter where they move, by updating there position on king bin
-            let existing_kings = board.kings ^ (((board.kings >> src) & 1) * (src_mask | tgt_mask));
-            let kings = existing_kings | ((promoted as u32) << tgt); // if the piece was just promoted, we add them to the list of kings
+            // let existing_kings = board.kings ^ (((board.kings >> src) & 1) * (src_mask | tgt_mask));
+            // let kings = existing_kings | ((promoted as u32) << tgt); // if the piece was just promoted, we add them to the list of kings
+
+            // HOW DO WE FIGURE OUT WHO WAS CAPTURED????
+            // let kings = ((self.kings & !(1 << src)) & !(1 << captured));
             let cp = !capture as u8;
 
             let turn = board.turn;
