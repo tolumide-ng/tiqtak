@@ -162,22 +162,19 @@ impl Board {
                 ..
             } = action;
 
-            println!(
-                "\n\nis >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> src-->> {src}, tgt -->> {tgt}\n\n",
-            );
-
             let src_mask = 1 << src;
             let tgt_mask = 1 << tgt;
 
-            // let kings = ((self.kings & !(1 << src)) & !(1 << captured))
-            //     | (u32::from(is_king || promoted) << tgt);
+            let captured = match capture {
+                true => BitBoard::new(src_mask, self[!self.turn], self[self.turn], self.kings)
+                    .captured(src, tgt),
+                false => 0,
+            };
 
-            // if the piece is a moving king, we ensure that they remain king no-matter where they move, by updating there position on king bin
-            // let existing_kings = board.kings ^ (((board.kings >> src) & 1) * (src_mask | tgt_mask));
-            // let kings = existing_kings | ((promoted as u32) << tgt); // if the piece was just promoted, we add them to the list of kings
+            let is_king = (self.kings & src_mask) != 0;
+            let kings = ((self.kings & !(1 << src)) & !(1 << captured))
+                | (u32::from(is_king || promoted) << tgt);
 
-            // HOW DO WE FIGURE OUT WHO WAS CAPTURED????
-            // let kings = ((self.kings & !(1 << src)) & !(1 << captured));
             let cp = !capture as u8;
 
             let turn = board.turn;

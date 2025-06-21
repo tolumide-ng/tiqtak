@@ -1,5 +1,3 @@
-use crate::{Player, game::traits::u32_shift::U32Ext};
-
 #[derive(Debug, Default)]
 pub struct Bits(u32);
 
@@ -24,15 +22,6 @@ impl AsMut<u32> for Bits {
 impl From<u32> for Bits {
     fn from(value: u32) -> Self {
         Self(value)
-    }
-}
-
-impl U32Ext for Bits {
-    fn shift_by(&self, shift: u8, player: Player) -> u32 {
-        match player {
-            Player::South => self.0 >> shift,
-            Player::North => self.0 << shift,
-        }
     }
 }
 
@@ -63,5 +52,3 @@ impl TryFrom<(u8, i8)> for Bits {
         Ok(Bits((result as u8).into()))
     }
 }
-
-

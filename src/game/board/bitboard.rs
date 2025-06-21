@@ -1,11 +1,8 @@
+use crate::Scale::*;
 use crate::game::model::bits::Bits;
 use crate::game::model::player::Player;
 use crate::game::model::sq::Sq;
 use crate::game::model::{action::Action, path::ActionPath};
-use crate::game::traits::u8_ops::U8Ext;
-use crate::game::traits::u32_shift::U32Ext;
-use crate::{Board, Qmvs, Scale::*};
-// use crate::{Board, Qmvs};
 
 pub(crate) struct BitBoard {
     pub(super) current: u32,
@@ -15,29 +12,6 @@ pub(crate) struct BitBoard {
 }
 
 impl BitBoard {
-    const LEFT: u32 = 0x08080808;
-    const RIGHT: u32 = 0x10101010;
-    pub(crate) const BOTTOM: u32 = 0x0000000F;
-    pub(crate) const TOP: u32 = 0xF0000000;
-
-    const TOP_LEFT_MV: u8 = 4;
-    const TOP_RIGHT_MV: u8 = 5;
-    const BOTTOM_LEFT_MV: u8 = 5;
-    const BOTTOM_RIGHT_MV: u8 = 4;
-
-    /// Number of rows on a checkers board (for each side)
-    const NUM_ROWS: u32 = 4;
-    /// On a 0 indexed board (first row as 0), the last row on the board is 7
-    /// Yes, there are 8 rows, but its 0 indexed
-    const MAX_ROW: u32 = 7;
-
-    const L3_MASK: u32 = 0xE0E0E0E;
-    const L5_MASK: u32 = 0x707070;
-    const R3_MASK: u32 = 0x70707070;
-    const R5_MASK: u32 = 0xE0E0E00;
-
-    //
-
     const NORTH_LEFT_3: u32 = 0xE0E0E0E; // +3
     const NORTH_LEFT_4: u32 = 0xF0F0F0; // + 4
 
@@ -50,56 +24,80 @@ impl BitBoard {
     const SOUTH_RIGHT_4: u32 = 0xF0F0F0F; // + 4
     const SOUTH_RIGHT_3: u32 = 0x70707070; // + 3
 
-    // /// When calling this function, always ensure that only one bit (i.e the main moving piece) is set in self.current
-    // /// All other pieces can be part of `team` or `others`
-    /// returns: (src, tgt, capture)
-    /// if capture is 0, it means there is no piece for this move to capture
-    fn shift(&self, src: u8, turn: Player) -> Vec<(Action, u8)> {
+    fn try_move(
+        &self,
+        src: u8,
+        turn: Player,
+    ) -> impl Fn((u32, i8), (u32, i8)) -> Option<(Action, u8)> {
         let curr = 1 << src;
         let empty = !(curr | self.current | self.other | self.team);
 
-        let mut actions: Vec<(Action, u8)> = vec![];
-
-        let mut try_move = |(maska, shfta): (u32, i8), (maskb, shftb): (u32, i8)| {
+        move |(maska, shfta): (u32, i8), (maskb, shftb): (u32, i8)| -> Option<(Action, u8)> {
             let offset =
                 (shfta * ((curr & maska) != 0) as i8) + (shftb * ((curr & maskb) != 0) as i8);
 
             let Ok(mid) = Sq::try_from((src, offset)).map(u8::from) else {
-                return;
+                return None;
             };
             let mid_bit = 1 << mid;
             let promoted = (mid_bit & turn.opponent_base()) != 0;
 
             if (mid_bit & empty) != 0 {
-                actions.push((Action::new_32(src, mid, false, promoted), 0));
+                // actions.push((Action::new_32(src, mid, false, promoted), 0));
+                return Some((Action::new_32(src, mid, false, promoted), 0));
             } else if (mid_bit & self.other) != 0 {
                 let second_offset = (shfta * ((mid_bit & maska) != 0) as i8)
                     + (shftb * ((mid_bit & maskb) != 0) as i8);
 
                 let Ok(tgt) = Sq::try_from((mid, second_offset)).map(u8::from) else {
-                    return;
+                    return None;
                 };
                 let tgt_bit = 1 << tgt;
                 let promoted = (tgt_bit & turn.opponent_base()) != 0;
                 if (tgt_bit & empty) != 0 {
-                    actions.push((Action::new_32(src, tgt, true, promoted), mid));
+                    // actions.push((Action::new_32(src, tgt, true, promoted), mid));\
+                    return Some((Action::new_32(src, tgt, true, promoted), mid));
                 }
             }
-        };
+
+            None
+        }
+    }
+
+    /// When calling this function, always ensure that only one bit (i.e the main moving piece) is set in self.current
+    /// All other pieces can be part of `team` or `others`
+    /// returns: (src, tgt, capture)
+    /// if capture is 0, it means there is no piece for this move to capture
+    fn shift(&self, src: u8, turn: Player) -> Vec<(Action, u8)> {
+        let mut actions: Vec<(Action, u8)> = vec![];
+
+        let mv = self.try_move(src, turn);
+        let mut push = |res: Option<(Action, u8)>| res.map(|action| actions.push(action));
+
         match turn {
             Player::North => {
                 // explores moves towards the south (as a nothern player)
-                try_move((Self::SOUTH_LEFT_4, -4), (Self::SOUTH_LEFT_5, -5)); // south-west
-                try_move((Self::SOUTH_RIGHT_3, -3), (Self::SOUTH_RIGHT_4, -4)); // south-east
+                push(mv((Self::SOUTH_RIGHT_3, -3), (Self::SOUTH_RIGHT_4, -4))); // south-east
+                push(mv((Self::SOUTH_LEFT_4, -4), (Self::SOUTH_LEFT_5, -5))); // south-west
             }
             Player::South => {
                 // explores moves towards the north (as a southern player)
-                try_move((Self::NORTH_RIGHT_4, 4), (Self::NORTH_RIGHT_5, 5)); // north east
-                try_move((Self::NORTH_LEFT_4, 4), (Self::NORTH_LEFT_3, 3)); // north east
+                push(mv((Self::NORTH_RIGHT_4, 4), (Self::NORTH_RIGHT_5, 5))); // north east
+                push(mv((Self::NORTH_LEFT_4, 4), (Self::NORTH_LEFT_3, 3))); // north east
             }
         }
 
         actions
+    }
+
+    pub(crate) fn captured(&self, src: u8, tgt: u8) -> u8 {
+        let turn = Player::from(src < tgt);
+
+        self.shift(src, turn)
+            .into_iter()
+            .find(|(action, _)| action.src == src && action.tgt == tgt)
+            .map(|(_, cp)| cp)
+            .unwrap_or(0)
     }
 
     fn next<F>(&self, action: Action, captured: u8, turn: Player, mut func: F)
@@ -390,7 +388,6 @@ mod tests {
         let north = 1 << 25 | 1 << 26 | 1 << 13;
 
         let board = Board::with(north, south, 0, Player::South, Qmvs::default());
-        // println!("{board}");
         let received = board.options(Player::South);
         let expected = get_path(vec![
             vec![(41, 59, true, true, U64), (59, 45, true, false, U64)],
@@ -503,7 +500,6 @@ mod tests {
         let action = ActionPath::from(expected[0]);
 
         let new_board = board.play(action).unwrap();
-        println!("{new_board}");
 
         assert_eq!(new_board.kings, 0);
     }
