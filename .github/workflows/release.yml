@@ -103,8 +103,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
-          # files: dist/tiqtak-${{ env.TAG_NAME }}-${{ matrix.target }}
           files: ${{ steps.upload_file.outputs.FILE }}
+          tag_name: ${{ github.ref_name }}
+          overwrite: true
   
   macos-build:
     runs-on: macos-latest
