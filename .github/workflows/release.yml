@@ -52,21 +52,24 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        targets:
+        target:
           - x86_64-unknown-linux-musl # Static linux
           - x86_64-pc-windows-gnu # Windows
           - armv7-unknown-linux-gnueabihf # 32-bits Raspberry PI
           - aarch64-unknown-linux-gnu # 64-bits Raspberry PI
-          - armv7-unknown-linux-gnueabihf # 32-bit RPi OS
     env:
       TAG_NAME: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        
+      - name: Debug target
+        run: |
+          echo "Building for target: ${{ matrix.target }}"
       
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          target: ${{ matrix.target }}
 
       - name: Install Docker
         uses: docker/setup-docker-action@v4
@@ -77,13 +80,31 @@ jobs:
       - name: Build with cross
         run: |
           cross build --target ${{ matrix.target }} --release
-          mkdir dist
-          cp target/${{ matrix.target }}/release/tiqtak dist/tiqtak-${{ env.TAG_NAME }}-${{ matrix.target }}
+          mkdir -p dist
+          if [[ "${{ matrix.target }}" == "x86_64-pc-windows-gnu" ]]; then
+            cp target/${{ matrix.target }}/release/tiqtak.exe dist/tiqtak-${{ env.TAG_NAME }}-${{ matrix.target }}.exe
+          else
+            cp target/${{ matrix.target }}/release/tiqtak dist/tiqtak-${{ env.TAG_NAME }}-${{ matrix.target }}
+          fi
       - name: Release
         uses: softprops/action-gh-release@v2
         if: github.ref_type == 'tag'
         with:
           files: Release.txt
+      - name: Set upload file path
+        id: upload_file
+        run: |
+          if [[ "${{ matrix.target }}" == "x86_64-pc-windows-gnu" ]]; then
+            echo "FILE=dist/tiqtak-${{ env.TAG_NAME }}-${{ matrix.target }}.exe" >> $GITHUB_OUTPUT
+          else
+            echo "FILE=dist/tiqtak-${{ env.TAG_NAME }}-${{ matrix.target }}" >> $GITHUB_OUTPUT
+          fi
+      - name: Upload Release binaries
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          # files: dist/tiqtak-${{ env.TAG_NAME }}-${{ matrix.target }}
+          files: ${{ steps.upload_file.outputs.FILE }}
   
   macos-build:
     runs-on: macos-latest
@@ -97,11 +118,14 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          target: ${{ matrix.target }}
       - run: rustup target add ${{ matrix.target }}
       - run: cargo build --release --target ${{ matrix.target }}
+      - name: Package macOS binary
+        run: |
+          zip -j tiqtak-${{ matrix.target }}-${{ env.TAG_NAME }}.zip target/${{ matrix.target }}/release/tiqtak
       - name: Upload artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/tiqtak
+          path: tiqtak-${{ matrix.target }}-${{ env.TAG_NAME }}.zip
