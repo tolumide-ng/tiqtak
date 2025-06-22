@@ -1,7 +1,11 @@
 use std::ops::Not;
 
+#[cfg(feature = "web")]
+use wasm_bindgen::prelude::*;
+
 /// Used for an action to tell whether the action belongs to a 64bits or 32bits bitboard
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "web", wasm_bindgen)]
 pub enum Scale {
     U64 = 1,
     U32,

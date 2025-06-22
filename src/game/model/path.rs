@@ -84,7 +84,8 @@ impl ActionPath {
         Ok(())
     }
 
-    pub(crate) fn transcode(&self) -> Self {
+    #[cfg_attr(feature = "web", wasm_bindgen)]
+    pub fn transcode(&self) -> Self {
         let mut new = Self::new(!self.scale);
         new.len = self.len;
 

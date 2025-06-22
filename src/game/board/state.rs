@@ -202,7 +202,7 @@ impl Board {
     /// exp: exploration constant for MCTS
     /// col: cost of losing (recommended ==> -1.25)
     /// limit: How long should MCTS think (in ms)? (recommended 100)
-    #[cfg_attr(feature = "web", wasm_bindgen(constructor))]
+    #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn best_mv(&self, exp: f64, col: f64, limit: u128) -> ActionPath {
         let skills = SkillLevel::One(Strength::new(exp, col, Limit::Time(limit)));
         let mut mcts = MCTS::new(*self, self.turn, vec![Player::North, Player::South], skills);

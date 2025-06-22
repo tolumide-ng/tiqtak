@@ -10,6 +10,7 @@ use crate::mcts::traits::MCTSError;
 
 use super::model::player::Player;
 
+#[cfg_attr(feature = "web", wasm_bindgen)]
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum ApiError {
     #[error("Illegal move")]

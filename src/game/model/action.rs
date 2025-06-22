@@ -40,16 +40,16 @@ impl From<ActionTuple<Scale>> for Action {
     }
 }
 
+const SRC_MASK: u16 = 0b0011_1111;
+const TGT_MASK: u16 = 0b1111_1100_0000;
+
+const SHIFT_TGT: u8 = 6;
+const SHIFT_CP: u8 = 12; // shift capture
+const SHIFT_P: u8 = 13; // shift promoted
+const SHIFT_BITS: u8 = 14; // shift -> bits format (e.g u64 bitboard or u32 bitboard)
+
 #[cfg_attr(feature = "web", wasm_bindgen)]
 impl Action {
-    const SRC_MASK: u16 = 0b0011_1111;
-    const TGT_MASK: u16 = 0b1111_1100_0000;
-
-    const SHIFT_TGT: u8 = 6;
-    const SHIFT_CP: u8 = 12; // shift capture
-    const SHIFT_P: u8 = 13; // shift promoted
-    const SHIFT_BITS: u8 = 14; // shift -> bits format (e.g u64 bitboard or u32 bitboard)
-
     /// Creates a new Action(move) for the checkers board  
     /// src: represents the position of the piece that would be moved  
     /// tgt: represents the target position where this piece would be placed after the move  
@@ -80,6 +80,7 @@ impl Action {
 
     /// Converts a u32 format Action to u64, and a u64 format of Action to u32
     /// NB: The term u64 or u32 refers to the actual mapping of the board.
+    #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn transcode(&self) -> Self {
         let Action {
             src,
@@ -89,7 +90,7 @@ impl Action {
             scale,
         } = *self;
 
-        match self.scale {
+        match scale {
             Scale::U32 => {
                 let cols = 4; // number of columns per row in 32bits board
                 // whether the row of the src/tgt is an even numbered (rows are numbered from 0 to 7)
@@ -152,10 +153,10 @@ impl From<Action> for u16 {
     fn from(value: Action) -> Self {
         let scale_bit = matches!(value.scale, Scale::U64) as u16;
 
-        let result = (scale_bit << Action::SHIFT_BITS)
-            | (u16::from(value.promoted) << Action::SHIFT_P)
-            | (u16::from(value.capture) << Action::SHIFT_CP)
-            | (u16::from(value.tgt) << Action::SHIFT_TGT)
+        let result = (scale_bit << SHIFT_BITS)
+            | (u16::from(value.promoted) << SHIFT_P)
+            | (u16::from(value.capture) << SHIFT_CP)
+            | (u16::from(value.tgt) << SHIFT_TGT)
             | (u16::from(value.src));
 
         result
@@ -164,11 +165,11 @@ impl From<Action> for u16 {
 
 impl From<u16> for Action {
     fn from(value: u16) -> Self {
-        let src = (value & Self::SRC_MASK) as u8;
-        let capture = (value & (1 << Self::SHIFT_CP)) != 0;
-        let tgt = ((value & Self::TGT_MASK) >> Self::SHIFT_TGT) as u8;
-        let promoted = (value & (1 << Self::SHIFT_P)) != 0;
-        let scale = ((1 << Self::SHIFT_BITS) & value) != 0;
+        let src = (value & SRC_MASK) as u8;
+        let capture = (value & (1 << SHIFT_CP)) != 0;
+        let tgt = ((value & TGT_MASK) >> SHIFT_TGT) as u8;
+        let promoted = (value & (1 << SHIFT_P)) != 0;
+        let scale = ((1 << SHIFT_BITS) & value) != 0;
 
         Self {
             src,

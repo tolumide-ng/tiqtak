@@ -327,7 +327,7 @@ mod tests {
         assert_eq!(received.len(), expected.len());
         expected
             .iter()
-            .for_each(|x| assert!(received.contains(&x.transcode())));
+            .for_each(|x| assert!(received.contains(&(x.transcode()))));
     }
 
     #[test]
@@ -354,7 +354,7 @@ mod tests {
         assert_eq!(received.len(), expected.len());
 
         expected
-            .iter()
+            .into_iter()
             .for_each(|mv| assert!(received.contains(&mv.transcode())));
     }
 
@@ -398,7 +398,7 @@ mod tests {
         assert_eq!(received.len(), expected.len());
         expected
             .iter()
-            .for_each(|mv| assert!(received.contains(&mv.transcode())));
+            .for_each(|mv| assert!(received.contains(&(mv.transcode()))));
     }
 
     #[test]
