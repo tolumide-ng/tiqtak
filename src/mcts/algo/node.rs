@@ -136,15 +136,6 @@ where
             .filter_map(|c| c.as_ref().borrow().action)
             .collect::<Vec<_>>();
 
-        // println!(
-        //     "the total obtained actions here is >>>>>|||||||| {}, and the expanded_children are ------>>>> ((((((({})))))",
-        //     actions.len(),
-        //     expanded_children.len()
-        // );
-        // println!(
-        //     "the expanded children are {:?}, \n\n actions are: {:?}",
-        //     expanded_children, actions
-        // );
         return actions
             .into_iter()
             .filter(|a| !expanded_children.contains(a))

@@ -34,7 +34,6 @@ impl Iterator for Bits {
         }
 
         let idx = self.0.trailing_zeros() as u8;
-        // println!("index is >>> {}", idx);
         self.0 &= self.0 - 1;
         Some(idx)
     }

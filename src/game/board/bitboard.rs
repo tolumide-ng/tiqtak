@@ -489,13 +489,10 @@ mod tests {
             vec![(45, 36, false, false, U64)],
         ]);
 
-        println!("{board}");
-
         assert_eq!(expected.len(), received.len());
-        expected.iter().for_each(|x| {
-            x.iter().for_each(|x| print!("{}", Action::from(*x)));
-            assert!(received.contains(&x.transcode()))
-        });
+        expected
+            .iter()
+            .for_each(|x| assert!(received.contains(&x.transcode())));
 
         let action = ActionPath::from(expected[0]);
 

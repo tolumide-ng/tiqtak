@@ -132,7 +132,7 @@ dependencies = [
 
 [[package]]
 name = "tiqtak"
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 dependencies = [
  "getrandom",
  "serde",
