@@ -179,12 +179,6 @@ where
         // println!("the children here are ***** {game_ended}");
 
         if !game_ended {
-            // let actions = self.get_unexpanded_actions();
-
-            // actions.iter().for_each(|x| println!("{:?}", x.to_string()));
-
-            // println!("the unexpanded actions are ????? {:?}", actions);
-
             let index = genrand(0, actions.len());
             let action = &actions[index];
 

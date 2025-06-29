@@ -14,14 +14,17 @@ fn main() {
         let limit = Limit::Time(100);
         let skills = SkillLevel::Two(Strength::new(exploration_constant, cost_of_losing, limit));
 
+        // #[cfg(not(feature = "history"))]
         let mut board = Board::new();
 
         while board.get_reward() == Reward::Continue {
-            let mut mcts = MCTS::new(board, board.turn, players.clone(), skills);
+            let turn = board.turn;
+            let mut mcts = MCTS::new(board.clone(), turn, players.clone(), skills);
 
             let mv = mcts.run();
 
             mv.iter().for_each(|x| println!("{} -->", Action::from(*x)));
+
             board = board.play(mv).unwrap();
 
             println!("{board}");

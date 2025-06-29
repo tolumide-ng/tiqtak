@@ -240,7 +240,15 @@ mod tests {
             vec![(11, 7, false, false, U32)],
         ]);
 
-        let board = Board::with(north, south, kings, Player::South, Qmvs::default());
+        let board = Board::with(
+            north,
+            south,
+            kings,
+            Player::South,
+            Qmvs::default(),
+            #[cfg(feature = "history")]
+            Vec::with_capacity(0),
+        );
         let received = board.options(Player::South);
 
         assert_eq!(expected.len(), received.len());
@@ -266,7 +274,15 @@ mod tests {
             vec![(12, 17, false, false, U32)],
         ]);
 
-        let board = Board::with(north, south, kings, Player::North, Qmvs::default());
+        let board = Board::with(
+            north,
+            south,
+            kings,
+            Player::North,
+            Qmvs::default(),
+            #[cfg(feature = "history")]
+            Vec::with_capacity(0),
+        );
         let received = board.options(Player::North);
 
         assert_eq!(expected.len(), received.len());
@@ -283,7 +299,15 @@ mod tests {
         let north = 1u32 << 27;
         let kings = 0;
 
-        let board = Board::with(north, south, kings, Player::North, Qmvs::default());
+        let board = Board::with(
+            north,
+            south,
+            kings,
+            Player::North,
+            Qmvs::default(),
+            #[cfg(feature = "history")]
+            Vec::with_capacity(0),
+        );
         let received = board.options(Player::North);
 
         let expected = get_path(vec![
@@ -308,7 +332,15 @@ mod tests {
         let south = 1 << 12 | 1 << 13 | 1 << 20 | 1 << 10;
         let north = 1 << 17 | 1 << 18 | 1 << 27 | 1 << 29;
 
-        let board = Board::with(north, south, 0, Player::South, Qmvs::default());
+        let board = Board::with(
+            north,
+            south,
+            0,
+            Player::South,
+            Qmvs::default(),
+            #[cfg(feature = "history")]
+            Vec::with_capacity(0),
+        );
         let received = board.options(Player::South);
 
         let expected = get_path(vec![
@@ -337,7 +369,15 @@ mod tests {
 
         let kings = 1 << 21;
 
-        let board = Board::with(north, south, kings, Player::South, Qmvs::default());
+        let board = Board::with(
+            north,
+            south,
+            kings,
+            Player::South,
+            Qmvs::default(),
+            #[cfg(feature = "history")]
+            Vec::with_capacity(0),
+        );
         let received = board.options(Player::South);
 
         let expected = get_path(vec![
@@ -387,7 +427,15 @@ mod tests {
         let south = 1 << 20;
         let north = 1 << 25 | 1 << 26 | 1 << 13;
 
-        let board = Board::with(north, south, 0, Player::South, Qmvs::default());
+        let board = Board::with(
+            north,
+            south,
+            0,
+            Player::South,
+            Qmvs::default(),
+            #[cfg(feature = "history")]
+            Vec::with_capacity(0),
+        );
         let received = board.options(Player::South);
         let expected = get_path(vec![
             vec![(41, 59, true, true, U64), (59, 45, true, false, U64)],
@@ -407,7 +455,15 @@ mod tests {
         let south = 1 << 28 | 1 << 29 | 1 << 30 | 1 << 31;
         let kings = 1 << 1 | 1 << 3 | 1 << 28 | 1 << 29 | 1 << 30 | 1 << 31;
 
-        let board = Board::with(north, south, kings, Player::North, Qmvs::default());
+        let board = Board::with(
+            north,
+            south,
+            kings,
+            Player::North,
+            Qmvs::default(),
+            #[cfg(feature = "history")]
+            Vec::with_capacity(0),
+        );
         let received = board.options(Player::North);
 
         let expected = get_path(vec![
@@ -431,7 +487,15 @@ mod tests {
 
         let kings = 1 << 1 | 1 << 3 | 1 << 28 | 1 << 29 | 1 << 30 | 1 << 31;
 
-        let board = Board::with(north, south, kings, Player::North, Qmvs::default());
+        let board = Board::with(
+            north,
+            south,
+            kings,
+            Player::North,
+            Qmvs::default(),
+            #[cfg(feature = "history")]
+            Vec::with_capacity(0),
+        );
 
         assert_eq!(board.kings.count_ones(), 6);
         assert_eq!((board.south & board.kings).count_ones(), 4);
@@ -460,7 +524,15 @@ mod tests {
         let north = 1 << 22;
         let south = 1 << 19;
 
-        let board = Board::with(north, south, 0, Player::North, Qmvs::default());
+        let board = Board::with(
+            north,
+            south,
+            0,
+            Player::North,
+            Qmvs::default(),
+            #[cfg(feature = "history")]
+            Vec::with_capacity(0),
+        );
         let received = board.options(Player::North);
 
         let expected = get_path(vec![
@@ -480,7 +552,15 @@ mod tests {
         let north = 1 << 22;
         let south = 1 << 19;
 
-        let board = Board::with(north, south, south, Player::North, Qmvs::default());
+        let board = Board::with(
+            north,
+            south,
+            south,
+            Player::North,
+            Qmvs::default(),
+            #[cfg(feature = "history")]
+            Vec::with_capacity(0),
+        );
         let received = board.options(Player::North);
         assert_eq!(524288, board.kings);
 

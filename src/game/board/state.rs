@@ -19,7 +19,8 @@ use crate::{
 use super::scale::Scale;
 
 #[cfg_attr(feature = "web", wasm_bindgen)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(not(feature = "history"), derive(Copy))]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
 pub struct Board {
     /// white pieces and white kings
@@ -34,6 +35,8 @@ pub struct Board {
     /// this value automatically resets to 0 for both sides after any capture.
     /// any of the values reaching 20 would result ina  "draw"
     pub qmvs: Qmvs,
+    #[cfg(feature = "history")]
+    pub(crate) prev: Vec<Self>,
 }
 
 #[cfg_attr(feature = "web", wasm_bindgen)]
@@ -53,6 +56,8 @@ impl Board {
             kings: 0,
             turn: Player::South,
             qmvs: Qmvs::default(),
+            #[cfg(feature = "history")]
+            prev: Vec::new(),
         }
     }
 
@@ -68,13 +73,22 @@ impl Board {
     /// players, this value automatically resets to (0, 0) if any of the players captures the opponent's piece
     /// If there is no capture after atleast 20 moves (from either player), the game automatically becomes a draw  
     #[cfg_attr(feature = "web", wasm_bindgen(constructor))]
-    pub fn with(north: u32, south: u32, kings: u32, turn: Player, qmvs: Qmvs) -> Self {
+    pub fn with(
+        north: u32,
+        south: u32,
+        kings: u32,
+        turn: Player,
+        qmvs: Qmvs,
+        #[cfg(feature = "history")] prev: Vec<Self>,
+    ) -> Self {
         Self {
             north,
             south,
             kings,
             turn,
             qmvs,
+            #[cfg(feature = "history")]
+            prev,
         }
     }
 
@@ -145,6 +159,10 @@ impl Board {
         if !self.is_valid(action, self.turn) {
             return None;
         }
+
+        #[cfg(feature = "history")]
+        let mut board = self.clone();
+        #[cfg(not(feature = "history"))]
         let mut board = *self;
 
         for mv in &action.mvs[..action.len] {
@@ -190,11 +208,48 @@ impl Board {
             qmvs[turn] = (qmvs[turn] + 1) * cp;
             qmvs[!turn] *= cp;
 
-            board = Self::with(north, south, kings, turn, qmvs);
+            #[cfg(feature = "history")]
+            let prev = {
+                let mut history = std::mem::take(&mut board.prev);
+                history.push(board);
+                history
+            };
+
+            board = Self::with(
+                north,
+                south,
+                kings,
+                turn,
+                qmvs,
+                #[cfg(feature = "history")]
+                prev,
+            );
         }
 
         board.turn = !self.turn;
         return Some(board);
+    }
+
+    #[cfg_attr(feature = "web", wasm_bindgen)]
+    #[cfg(feature = "history")]
+    pub fn undo(&mut self, player: Player) -> Result<Self, ApiError> {
+        let mut logs = std::mem::take(&mut self.prev);
+
+        match player == self.turn {
+            true if logs.len() > 2 => {
+                logs.truncate(logs.len() - 2);
+            }
+            // we can only undo in this case if this player has played before, else abort the game themselve
+            false if logs.len() > 2 => {
+                logs.truncate(logs.len() - 1);
+            }
+            _ => return Err(ApiError::IllegalMove),
+        };
+
+        let mut board = logs.pop().unwrap();
+        board.prev = logs;
+
+        return Ok(board);
     }
 
     /// Generates the next best move based on the provided MCTS configuration
@@ -205,7 +260,11 @@ impl Board {
     #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn best_mv(&self, exp: f64, col: f64, limit: u128) -> ActionPath {
         let skills = SkillLevel::One(Strength::new(exp, col, Limit::Time(limit)));
-        let mut mcts = MCTS::new(*self, self.turn, vec![Player::North, Player::South], skills);
+        #[cfg(not(feature = "history"))]
+        let state = *self;
+        #[cfg(feature = "history")]
+        let state = self.clone();
+        let mut mcts = MCTS::new(state, self.turn, vec![Player::North, Player::South], skills);
         mcts.run()
     }
 }
@@ -239,12 +298,13 @@ impl State<ActionPath, Player, ApiError> for Board {
     }
 
     fn apply_action(&self, action: &ActionPath) -> Result<(Self, Player), ApiError> {
-        // let mut board = self.clone();
-        let Some(state) = self.play(*action) else {
-            return Err(ApiError::IllegalMove);
-        };
-
-        Ok((state, state.turn))
+        match self.play(*action) {
+            Some(state) => {
+                let turn = state.turn;
+                return Ok((state, turn));
+            }
+            _ => Err(ApiError::IllegalMove),
+        }
     }
 
     fn get_current_player(&self) -> &Player {
