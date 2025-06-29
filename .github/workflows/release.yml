@@ -105,7 +105,7 @@ jobs:
         with:
           files: ${{ steps.upload_file.outputs.FILE }}
           tag_name: ${{ github.ref_name }}
-          overwrite: true
+          make_latest: true
   
   macos-build:
     runs-on: macos-latest
