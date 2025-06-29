@@ -135,6 +135,8 @@ impl Board {
 
         let result = BitBoard::new(1 << action.src, self[!turn], self[turn], self.kings).get(turn);
 
+        println!("{:?}", result);
+
         if path.scale == Scale::U64 {
             return result.contains(&path.transcode());
         } else {
@@ -157,6 +159,7 @@ impl Board {
     #[cfg_attr(feature = "web", wasm_bindgen)]
     pub fn play(&self, action: ActionPath) -> Option<Self> {
         if !self.is_valid(action, self.turn) {
+            println!("that's a bad move");
             return None;
         }
 
@@ -234,17 +237,15 @@ impl Board {
     #[cfg(feature = "history")]
     pub fn undo(&mut self, player: Player) -> Result<Self, ApiError> {
         let mut logs = std::mem::take(&mut self.prev);
+        let has_enough_history = logs.len() > 2;
+        // we can only undo in this case if this player has played before, else abort the game themselve
+        if !has_enough_history {
+            return Err(ApiError::IllegalMove);
+        }
 
-        match player == self.turn {
-            true if logs.len() > 2 => {
-                logs.truncate(logs.len() - 2);
-            }
-            // we can only undo in this case if this player has played before, else abort the game themselve
-            false if logs.len() > 2 => {
-                logs.truncate(logs.len() - 1);
-            }
-            _ => return Err(ApiError::IllegalMove),
-        };
+        if player == self.turn {
+            logs.pop();
+        }
 
         let mut board = logs.pop().unwrap();
         board.prev = logs;
@@ -384,5 +385,133 @@ impl std::fmt::Display for Board {
         writeln!(f, "North: {:08x}", self.north)?;
         writeln!(f, "Kings: {:08x}", self.kings)?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[cfg(feature = "history")]
+    #[cfg(test)]
+    mod undo_moves {
+        use crate::{
+            Action, Board,
+            Scale::*,
+            game::{model::player::Player, utils::ApiError},
+        };
+
+        #[test]
+        fn should_undo_two_moves_when_it_is_players_turn() {
+            let mut board = Board::new();
+            assert_eq!(board.prev.len(), 0);
+
+            let mv_0 = Action::new(9, 13, false, false, U32).into();
+            let mv_1 = Action::new(23, 19, false, false, U32).into();
+            let mv_2 = Action::new(11, 14, false, false, U32).into();
+
+            board = board.play(mv_0).unwrap();
+            assert_eq!(board.south, 0x00002dff);
+            assert_eq!(board.north, 0xfff00000);
+            assert_eq!(board.kings, 0);
+            assert_eq!(board.prev.len(), 1);
+
+            board = board.play(mv_1).unwrap();
+            assert_eq!(board.south, 0x00002dff);
+            assert_eq!(board.north, 0xff780000);
+            assert_eq!(board.kings, 0);
+            assert_eq!(board.prev.len(), 2);
+
+            board = board.play(mv_2).unwrap();
+            assert_eq!(board.south, 0x000065ff);
+            assert_eq!(board.north, 0xff780000);
+            assert_eq!(board.kings, 0);
+            assert_eq!(board.prev.len(), 3);
+            assert_eq!(board.prev[0].prev.len(), 0);
+            assert_eq!(board.prev[1].prev.len(), 0);
+            assert_eq!(board.prev[2].prev.len(), 0);
+
+            board = board.undo(Player::North).unwrap();
+            assert_eq!(board.south, 0x00002dff);
+            assert_eq!(board.north, 0xfff00000);
+            assert_eq!(board.kings, 0);
+            assert_eq!(board.turn, Player::North);
+            assert_eq!(board.prev.len(), 1);
+        }
+
+        #[test]
+        fn should_undo_one_move_if_its_not_the_users_turn() {
+            let mut board = Board::new();
+            assert_eq!(board.prev.len(), 0);
+
+            let mv_0 = Action::new(9, 13, false, false, U32).into();
+            let mv_1 = Action::new(23, 19, false, false, U32).into();
+            let mv_2 = Action::new(11, 14, false, false, U32).into();
+
+            board = board.play(mv_0).unwrap();
+            assert_eq!(board.south, 0x00002dff);
+            assert_eq!(board.north, 0xfff00000);
+            assert_eq!(board.kings, 0);
+            assert_eq!(board.prev.len(), 1);
+
+            board = board.play(mv_1).unwrap();
+            assert_eq!(board.south, 0x00002dff);
+            assert_eq!(board.north, 0xff780000);
+            assert_eq!(board.kings, 0);
+            assert_eq!(board.prev.len(), 2);
+
+            board = board.play(mv_2).unwrap();
+            assert_eq!(board.south, 0x000065ff);
+            assert_eq!(board.north, 0xff780000);
+            assert_eq!(board.kings, 0);
+            assert_eq!(board.prev.len(), 3);
+            assert_eq!(board.prev[0].prev.len(), 0);
+            assert_eq!(board.prev[1].prev.len(), 0);
+            assert_eq!(board.prev[2].prev.len(), 0);
+
+            assert_eq!(board.turn, Player::North);
+            board = board.undo(Player::South).unwrap();
+            assert_eq!(board.prev.len(), 2);
+            assert_eq!(board.south, 0x00002dff);
+            assert_eq!(board.north, 0xff780000);
+            assert_eq!(board.kings, 0);
+            assert_eq!(board.turn, Player::South);
+        }
+
+        #[test]
+        fn undo_rejected_if_player_turn_and_game_start() {
+            let mut board = Board::new();
+            assert_eq!(board.prev.len(), 0);
+
+            let result = board.undo(Player::South);
+            assert_eq!(result, Err(ApiError::IllegalMove));
+        }
+
+        #[test]
+        fn undo_rejected_if_not_player_turn_but_game_start() {
+            let mut board = Board::new();
+            assert_eq!(board.prev.len(), 0);
+
+            let result = board.undo(Player::North);
+            assert_eq!(result, Err(ApiError::IllegalMove));
+        }
+
+        #[test]
+        fn undo_rejected_if_not_enough_games() {
+            let mut board = Board::new();
+            assert_eq!(board.prev.len(), 0);
+
+            let mv_0 = Action::new(9, 13, false, false, U32).into();
+
+            board = board.play(mv_0).unwrap();
+            assert_eq!(board.south, 0x00002dff);
+            assert_eq!(board.north, 0xfff00000);
+            assert_eq!(board.kings, 0);
+            assert_eq!(board.prev.len(), 1);
+
+            let result = board.undo(Player::North);
+            assert_eq!(result, Err(ApiError::IllegalMove));
+
+            let result = board.undo(Player::South);
+            assert_eq!(result, Err(ApiError::IllegalMove));
+        }
     }
 }
