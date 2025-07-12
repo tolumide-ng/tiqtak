@@ -146,6 +146,12 @@ impl TryFrom<&[u16]> for ActionPath {
     }
 }
 
+impl From<ActionPath> for Vec<u16> {
+    fn from(value: ActionPath) -> Self {
+        value.mvs[..value.len].to_vec()
+    }
+}
+
 impl Deref for ActionPath {
     type Target = [u16];
 
