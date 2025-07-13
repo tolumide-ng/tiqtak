@@ -36,6 +36,7 @@ pub struct Board {
     /// any of the values reaching 20 would result ina  "draw"
     pub qmvs: Qmvs,
     #[cfg(feature = "history")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub(crate) prev: Vec<Self>,
 }
 
@@ -231,6 +232,18 @@ impl Board {
 
         board.turn = !self.turn;
         return Some(board);
+    }
+
+    // #[cfg_attr(feature = "web", wasm_bindgen)]
+    // #[cfg(feature = "history")]
+    // pub fn history(&self) -> js_sys::Array {
+    //     self.prev.iter().map(JsValue::from).collect()
+    // }
+
+    #[cfg_attr(feature = "web", wasm_bindgen)]
+    #[cfg(feature = "history")]
+    pub fn log_count(&self) -> usize {
+        self.prev.len()
     }
 
     #[cfg_attr(feature = "web", wasm_bindgen)]
