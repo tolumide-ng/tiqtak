@@ -253,7 +253,7 @@ impl Board {
     #[cfg(feature = "history")]
     pub fn undo(&mut self, player: Player) -> Result<Self, ApiError> {
         let mut logs = std::mem::take(&mut self.prev);
-        let has_enough_history = logs.len() > 2;
+        let has_enough_history = logs.len() >= 2;
         // we can only undo in this case if this player has played before, else abort the game themselve
         if !has_enough_history {
             return Err(ApiError::IllegalMove);

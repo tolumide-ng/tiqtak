@@ -143,7 +143,7 @@ dependencies = [
 
 [[package]]
 name = "tiqtak"
-version = "1.0.6"
+version = "1.0.7"
 dependencies = [
  "getrandom",
  "js-sys",
