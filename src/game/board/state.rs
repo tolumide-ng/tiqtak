@@ -234,11 +234,14 @@ impl Board {
         return Some(board);
     }
 
-    // #[cfg_attr(feature = "web", wasm_bindgen)]
-    // #[cfg(feature = "history")]
-    // pub fn history(&self) -> js_sys::Array {
-    //     self.prev.iter().map(JsValue::from).collect()
-    // }
+    #[cfg_attr(all(feature = "web", feature = "serde"), wasm_bindgen)]
+    #[cfg(feature = "history")]
+    pub fn logs(&self) -> js_sys::Array {
+        self.prev
+            .iter()
+            .map(|b| serde_wasm_bindgen::to_value(b).unwrap())
+            .collect()
+    }
 
     #[cfg_attr(feature = "web", wasm_bindgen)]
     #[cfg(feature = "history")]

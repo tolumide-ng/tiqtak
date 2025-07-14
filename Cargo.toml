@@ -1,6 +1,6 @@
 [package]
 name = "tiqtak"
-version = "1.0.5"
+version = "1.0.6"
 edition = "2024"
 authors = ["Tolumide Shopein"]
 exclude = [
@@ -18,7 +18,7 @@ debug = true
 
 [features]
 default = []
-web = ["dep:wasm-bindgen"]
+web = ["dep:wasm-bindgen", "dep:serde-wasm-bindgen"]
 serde = ["dep:serde"]
 history = ["dep:js-sys"]
 
@@ -30,6 +30,7 @@ getrandom = { version = "0.2", features = ["js"] }
 thiserror = "2.0.12"
 wasm-bindgen = { version="0.2.100", optional=true }
 serde = { version = "1.0.219", features = ["derive"], optional=true }
+serde-wasm-bindgen = { version = "0.6.5", optional = true }
 js-sys = { version = "0.3.77", optional = true }
 
 [build]
